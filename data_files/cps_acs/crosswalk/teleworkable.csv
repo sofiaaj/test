@@ -1,0 +1,152 @@
+soc_code_2010,occupation,occupation_title,teleworkable
+11-1011,10,Chief Executives,Yes
+11-1021,20,General and Operations Managers,Yes
+11-2011,40,Advertising and Promotions Managers,Yes
+11-2021,51,Marketing Managers,Yes
+11-2022,52,Sales Managers,Yes
+11-2031,60,Public Relations and Fundraising Managers,Yes
+11-3011,101,Administrative Services Managers,Yes
+11-3011,102,Facilities Managers,Yes
+11-3021,110,Computer and Information Systems Managers,Yes
+11-3031,120,Financial Managers,Yes
+11-3111,135,Compensation and Benefits Managers,Yes
+11-3121,136,Human Resources Managers,Yes
+11-3131,137,Training and Development Managers,Yes
+11-3061,150,Purchasing Managers,Yes
+11-9111,350,Medical and Health Services Managers,Yes
+11-9121,360,Natural Sciences Managers,Yes
+11-9131,400,Postmasters and Mail Superintendents,Yes
+11-9141,410,"Property, Real Estate, and Community Association Managers",Yes
+13-1011,500,"Agents and Business Managers of Artists, Performers, and Athletes",Yes
+13-1020,510,"Buyers and Purchasing Agents, Farm Products",Yes
+13-1020,520,"Wholesale and Retail Buyers, Except Farm Products",Yes
+13-1020,530,"Purchasing Agents, Except Wholesale, Retail, and Farm Products",Yes
+13-1031,540,"Claims Adjusters, Appraisers, Examiners, and Investigators",Yes
+13-1051,600,Cost Estimators,Yes
+13-1071,630,Human Resources Workers,Yes
+13-1081,700,Logisticians,Yes
+13-1081,705,Project Management Specialists,Yes
+13-1111,710,Management Analysts,Yes
+13-1141,640,"Compensation, Benefits, and Job Analysis Specialists",Yes
+13-1151,650,Training and Development Specialists,Yes
+13-1161,735,Market Research Analysts and Marketing Specialists,Yes
+13-2011,800,Accountants and Auditors,Yes
+13-2031,820,Budget Analysts,Yes
+13-2041,830,Credit Analysts,Yes
+13-2051,845,Financial and Investment Analysts,Yes
+13-2052,850,Personal Financial Advisors,Yes
+13-2053,860,Insurance Underwriters,Yes
+13-2061,900,Financial Examiners,Yes
+13-2071,910,Credit Counselors and Loan Officers,Yes
+13-2099,960,Other Financial Specialists,Yes
+15-1111,1005,Computer and Information Research Scientists,Yes
+15-1121,1006,Computer Systems Analysts,Yes
+15-1199,1108,"Computer Occupations, All Other",Yes
+15-1131,1010,Computer Programmers,Yes
+15-1132,1021,Software Developers,Yes
+15-1133,1022,Software Quality Assurance Analysts and Testers,Yes
+15-1152,1050,Computer Support Specialists,Yes
+15-1141,1065,Database Administrators and Architects,Yes
+15-1142,1105,Network and Computer Systems Administrators,Yes
+15-1122,1007,Information Security Analysts,Yes
+15-1134,1031,Web Developers,Yes
+15-1134,1032,Web and Digital Interface Designers,Yes
+15-1143,1106,Computer Network Architects,Yes
+15-2011,1200,Actuaries,Yes
+15-2021,1210,Mathematicians,Yes
+15-2031,1220,Operations Research Analysts,Yes
+15-2041,1230,Statisticians,Yes
+17-1011,1305,"Architects, Except Landscape and Naval",Yes
+17-1012,1306,Landscape Architects,Yes
+17-1021,1310,"Surveyors, Cartographers, and Photogrammetrists",Yes
+17-2011,1320,Aerospace Engineers,Yes
+17-2031,1340,Bioengineers and biomedical engineers,Yes
+17-2051,1360,Civil Engineers,Yes
+17-2061,1400,Computer Hardware Engineers,Yes
+17-2071,1410,Electrical and Electronics Engineers,Yes
+17-2081,1420,Environmental Engineers,Yes
+17-2171,1520,Petroleum Engineers,Yes
+17-3011,1541,Architectural and Civil Drafters,Yes
+17-3022,1555,"Other Engineering Technologists and Technicians, Except Drafters",Yes
+19-1011,1600,Agricultural and Food Scientists,Yes
+19-1023,1610,Biological Scientists,Yes
+19-1041,1650,Medical Scientists,Yes
+19-2012,1700,Astronomers and Physicists,Yes
+19-2021,1710,Atmospheric and Space Scientists,Yes
+19-2041,1745,"Environmental Scientists and Specialists, Including Health",Yes
+19-2043,1750,"Geoscientists and Hydrologists, Except Geographers",Yes
+19-2099,1760,"Physical Scientists, All Other",Yes
+19-3011,1800,Economists,Yes
+19-3022,1815,Survey Researchers,Yes
+19-3032,1825,Other Psychologists,Yes
+19-3041,1830,Sociologists,Yes
+19-3099,1860,Miscellaneous Social Scientists and Related Workers,Yes
+21-1013,2003,Marriage and Family Therapists,Yes
+21-1015,2005,Rehabilitation Counselors,Yes
+21-2011,2040,Clergy,Yes
+23-1011,2100,Lawyers,Yes
+23-1012,2105,Judicial Law Clerks,Yes
+23-1022,2110,"Judges, Magistrates, and Other Judicial Workers",Yes
+23-2011,2145,Paralegals and Legal Assistants,Yes
+23-2091,2862,Court Reporters and Simultaneous Captioners,Yes
+23-2093,2170,"Title Examiners, Abstractors, and Searchers",Yes
+25-4012,2400,"Archivists, Curators, and Museum Technicians",Yes
+25-4021,2435,Librarians and Media Collections Specialists,Yes
+25-4031,2440,Library Technicians,Yes
+27-1011,2600,Artists and Related Workers,Yes
+27-1021,2631,Commercial and Industrial Designers,Yes
+27-1022,2632,Fashion Designers,Yes
+27-1023,2633,Floral Designers,Yes
+27-1024,2634,Graphic Designers,Yes
+27-1025,2635,Interior Designers,Yes
+27-1027,2640,Other Designers,Yes
+27-3022,2810,"News Analysts, Reporters, and Journalists",Yes
+27-3031,2825,Public Relations Specialists,Yes
+27-3041,2830,Editors,Yes
+27-3042,2840,Technical Writers,Yes
+27-3043,2850,Writers and Authors,Yes
+27-4011,2905,"Broadcast, Sound, and Lighting Technicians",Yes
+27-4021,2910,Photographers,Yes
+27-4032,2920,"Television, Video, and Film Camera Operators and Editors",Yes
+29-1066,3090,Other Physicians,Yes
+29-1127,3230,Speech-Language Pathologists,Yes
+29-2071,3515,Medical Records Specialists,Yes
+29-9092,3550,Other Healthcare Practitioners and Technical Occupations,Yes
+31-9094,3646,Medical Transcriptionists,Yes
+39-3011,4400,Gambling Services Workers,Yes
+41-3021,4810,Insurance Sales Agents,Yes
+41-3031,4820,"Securities, Commodities, and Financial Services Sales Agents",Yes
+41-3099,4840,"Sales representatives of services, except advertising, insurance, financial services, and travel",Yes
+41-4011,4850,"Sales Representatives, Wholesale and Manufacturing",Yes
+41-9012,4900,"Models, Demonstrators, and Product Promoters",Yes
+41-9021,4920,Real Estate Brokers and Sales Agents,Yes
+41-9031,4930,Sales Engineers,Yes
+41-9041,4940,Telemarketers,Yes
+43-1011,5000,First-Line Supervisors of Office and Administrative Support Workers,Yes
+43-2011,5010,"Switchboard Operators, Including Answering Service",Yes
+43-3011,5100,Bill and Account Collectors,Yes
+43-3031,5120,"Bookkeeping, Accounting, and Auditing Clerks",Yes
+43-3051,5140,Payroll and Timekeeping Clerks,Yes
+43-3061,5150,Procurement Clerks,Yes
+43-4011,5200,Brokerage Clerks,Yes
+43-4021,5210,Correspondence Clerks,Yes
+43-4041,5230,"Credit Authorizers, Checkers, and Clerks",Yes
+43-4071,5260,File Clerks,Yes
+43-4111,5310,"Interviewers, Except Eligibility and Loan",Yes
+43-4151,5350,Order Clerks,Yes
+43-4161,5360,"Human Resources Assistants, Except Payroll and Timekeeping",Yes
+43-5011,5500,Cargo and Freight Agents,Yes
+43-5032,5522,"Dispatchers, Except Police, Fire, and Ambulance",Yes
+43-6011,5710,Executive Secretaries and Executive Administrative Assistants,Yes
+43-6012,5720,Legal Secretaries and Administrative Assistants,Yes
+43-6013,5730,Medical Secretaries and Administrative Assistants,Yes
+43-6014,5740,"Secretaries and Administrative Assistants, Except Legal, Medical, and Executive",Yes
+43-9021,5810,Data Entry Keyers,Yes
+43-9022,5820,Word Processors and Typists,Yes
+43-9031,5830,Desktop Publishers,Yes
+43-9041,5840,Insurance Claims and Policy Processing Clerks,Yes
+43-9061,5860,"Office Clerks, General",Yes
+43-9081,5910,Proofreaders and Copy Markers,Yes
+43-9111,5920,Statistical Assistants,Yes
+51-5111,8250,Prepress Technicians and Workers,Yes
+51-6092,8465,"Other Textile, Apparel, and Furnishings Workers",Yes

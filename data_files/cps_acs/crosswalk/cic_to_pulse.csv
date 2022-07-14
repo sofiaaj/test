@@ -1,0 +1,273 @@
+﻿industry_title,industry,essential,industry_based_setting,all_setting_options,industry_based_alternatives
+Crop production  ,170,Yes,"Agriculture, forestry, etc","Agriculture, forestry, etc",No
+Animal production and aquaculture,180,Yes,"Agriculture, forestry, etc","Agriculture, forestry, etc",No
+Forestry except logging ,190,Yes,"Agriculture, forestry, etc","Agriculture, forestry, etc",No
+Logging ,270,Yes,"Agriculture, forestry, etc","Agriculture, forestry, etc",No
+"Fishing, hunting and trapping ",280,Yes,"Agriculture, forestry, etc","Agriculture, forestry, etc",No
+Support activities for agriculture and forestry ,290,Yes,None of the above,"Agriculture, forestry, etc",No
+Oil and gas extraction ,370,Yes,Other essential job,Other essential job,No
+Coal mining ,380,Yes,Other essential job,Other essential job,No
+Metal ore mining ,390,Yes,Other essential job,Other essential job,No
+Nonmetallic mineral mining and quarrying ,470,Yes,Other essential job,Other essential job,No
+Not specified type of mining,480,Yes,Other essential job,Other essential job,No
+Support activities for mining ,490,Yes,None of the above,Other essential job,No
+Construction (the cleaning of buildings and dwellings is incidental during construction and immediately after construction),770,Yes,Other essential job,Other essential job,No
+"Animal food, grain and oilseed milling ",1070,Yes,Other essential job,"Food manufacturing OR Agriculture, forestry, etc",Yes
+Sugar and confectionery products ,1080,Yes,Food manufacturing,Food manufacturing,No
+Fruit and vegetable preserving and specialty food manufacturing              ,1090,Yes,Food manufacturing,Food manufacturing,No
+Dairy product manufacturing,1170,Yes,Food manufacturing,Food manufacturing,No
+Animal slaughtering and processing ,1180,Yes,Food manufacturing,"Food manufacturing OR Agriculture, forestry, etc",Yes
+Retail bakeries ,1190,Yes,Food and beverage store,Food manufacturing OR Food and beverage store,Yes
+"Bakeries and tortilla manufacturing, except retail bakeries ",1270,Yes,Food manufacturing,Food manufacturing OR Food and beverage store,Yes
+"Seafood and other miscellaneous foods, n.e.c. ",1280,Yes,Food manufacturing,Food manufacturing OR Food and beverage store,Yes
+Not specified food industries,1290,Yes,Other essential job,Food manufacturing OR Food and beverage store,Yes
+Beverage manufacturing,1370,Yes,Food manufacturing,Food manufacturing,No
+Tobacco manufacturing,1390,No,None of the above,Food manufacturing,No
+"Fiber, yarn, and thread mills ",1470,No,None of the above,Non-food manufacturing,No
+"Fabric mills, except knitting mills",1480,No,None of the above,Non-food manufacturing,No
+Textile and fabric finishing and fabric coating mills ,1490,No,None of the above,Non-food manufacturing,No
+Carpet and rug mills,1570,No,None of the above,Non-food manufacturing,No
+"Textile product mills, except carpet and rug",1590,No,None of the above,Non-food manufacturing,No
+"Knitting fabric mills, and apparel knitting mills ",1670,No,None of the above,Non-food manufacturing,No
+"Cut and sew, and apparel accessories and other apparel manufacturing",1691,No,None of the above,Non-food manufacturing,No
+Footwear manufacturing,1770,No,None of the above,Non-food manufacturing,No
+"Leather and hide tanning and finishing, and other leather and allied product manufacturing",1790,No,None of the above,Non-food manufacturing,No
+"Pulp, paper, and paperboard mills ",1870,Yes,Other essential job,Non-food manufacturing,No
+Paperboard container manufacturing,1880,Yes,Other essential job,Non-food manufacturing,No
+Miscellaneous paper and pulp products  ,1890,Yes,Other essential job,Non-food manufacturing,No
+Printing and related support activities ,1990,Yes,None of the above,Non-food manufacturing,No
+Petroleum refining ,2070,Yes,Other essential job,Non-food manufacturing,No
+Miscellaneous petroleum and coal products ,2090,Yes,Other essential job,Non-food manufacturing,No
+"Resin, synthetic rubber, and fibers and filaments manufacturing   ",2170,Yes,Non-food manufacturing,Non-food manufacturing,No
+Agricultural chemical manufacturing  ,2180,Yes,Non-food manufacturing,Non-food manufacturing,No
+Pharmaceutical and medicine manufacturing,2190,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Paint, coating, and adhesive manufacturing ",2270,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Soap, cleaning compound, and cosmetics manufacturing ",2280,Yes,Non-food manufacturing,Non-food manufacturing,No
+Industrial and miscellaneous chemicals ,2290,Yes,Other essential job,Non-food manufacturing,No
+Plastics product manufacturing ,2370,Yes,Non-food manufacturing,Non-food manufacturing,No
+Tire manufacturing ,2380,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Rubber products, except tires, manufacturing ",2390,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Pottery, ceramics, and plumbing fixture manufacturing  ",2470,Yes,Non-food manufacturing,Non-food manufacturing,No
+Clay building material and refractories manufacturing,2480,Yes,Non-food manufacturing,Non-food manufacturing,No
+Glass and glass product manufacturing ,2490,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Cement, concrete, lime, and gypsum product manufacturing ",2570,Yes,Non-food manufacturing,Non-food manufacturing,No
+Miscellaneous nonmetallic mineral product manufacturing ,2590,Yes,Non-food manufacturing,Non-food manufacturing,No
+Iron and steel mills and steel product manufacturing  ,2670,Yes,Non-food manufacturing,Non-food manufacturing,No
+Aluminum production and processing  ,2680,Yes,Non-food manufacturing,Non-food manufacturing,No
+Nonferrous metal (except aluminum) production and processing ,2690,Yes,Non-food manufacturing,Non-food manufacturing,No
+Foundries ,2770,Yes,Non-food manufacturing,Non-food manufacturing,No
+Metal forgings and stampings ,2780,Yes,Other essential job,Non-food manufacturing,No
+Cutlery and hand tool manufacturing  ,2790,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Structural metals, and boiler, tank, and shipping container manufacturing ",2870,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Machine shops; turned product; screw, nut, and bolt manufacturing  ",2880,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Coating, engraving, heat treating, and allied activities ",2890,Yes,Non-food manufacturing,Non-food manufacturing,No
+Ordnance ,2970,Yes,Non-food manufacturing,Non-food manufacturing,No
+Miscellaneous fabricated metal products manufacturing             ,2980,Yes,Non-food manufacturing,Non-food manufacturing,No
+Not specified metal industries,2990,Yes,None of the above,Non-food manufacturing,No
+Agricultural implement manufacturing ,3070,No,None of the above,"Non-food manufacturing OR Agriculture, forestry, etc",Yes
+"Construction, and mining and oil and gas field machinery manufacturing ",3080,Yes,Non-food manufacturing,Non-food manufacturing,No
+Commercial and service industry machinery manufacturing,3095,Yes,Non-food manufacturing,Non-food manufacturing,No
+Metalworking machinery manufacturing,3170,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Engine, turbine, and power transmission equipment manufacturing",3180,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Machinery manufacturing, n.e.c. or not specified",3291,Yes,Non-food manufacturing,Non-food manufacturing,No
+Computer and peripheral equipment manufacturing,3365,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Communications, audio, and video equipment manufacturing",3370,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Navigational, measuring, electromedical, and control instruments manufacturing",3380,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Electronic component and product manufacturing, n.e.c. ",3390,No,None of the above,Non-food manufacturing,No
+Household appliance manufacturing ,3470,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Electric lighting and electrical equipment manufacturing, and other electrical component manufacturing, n.e.c.",3490,Yes,Non-food manufacturing,Non-food manufacturing,No
+Motor vehicles and motor vehicle equipment manufacturing ,3570,Yes,Non-food manufacturing,Non-food manufacturing,No
+Aircraft and parts manufacturing,3580,Yes,Non-food manufacturing,Non-food manufacturing,No
+Aerospace products and parts manufacturing ,3590,Yes,Non-food manufacturing,Non-food manufacturing,No
+Railroad rolling stock manufacturing,3670,Yes,Non-food manufacturing,Non-food manufacturing,No
+Ship and boat building ,3680,Yes,Other essential job,Non-food manufacturing,No
+Other transportation equipment manufacturing,3690,Yes,Non-food manufacturing,Non-food manufacturing,No
+Sawmills and wood preservation ,3770,Yes,Other essential job,Non-food manufacturing,No
+"Veneer, plywood, and engineered wood products ",3780,Yes,Non-food manufacturing,Non-food manufacturing,No
+Prefabricated wood buildings and mobile homes manufacturing,3790,Yes,Non-food manufacturing,Non-food manufacturing,No
+Miscellaneous wood products ,3875,Yes,Non-food manufacturing,Non-food manufacturing,No
+Furniture and related product manufacturing ,3895,No,None of the above,Non-food manufacturing,No
+Medical equipment and supplies manufacturing,3960,Yes,Non-food manufacturing,Non-food manufacturing,No
+"Sporting and athletic goods, and doll, toy and game manufacturing",3970,No,None of the above,Non-food manufacturing,No
+"Miscellaneous manufacturing, n.e.c.  ",3980,No,None of the above,Non-food manufacturing OR Food manufacturing,Yes
+Not specified manufacturing industries,3990,No,None of the above,Non-food manufacturing OR Food manufacturing,Yes
+Motor vehicle and motor vehicle parts and supplies merchant wholesalers,4070,Yes,Other essential job,Other essential job,No
+Furniture and home furnishing merchant wholesalers   ,4080,No,None of the above,None of the above,No
+Lumber and other construction materials merchant wholesalers ,4090,Yes,Other essential job,Other essential job,No
+Professional and commercial equipment and supplies merchant wholesalers,4170,No,None of the above,None of the above,No
+"Metals and minerals, except petroleum, merchant wholesalers                         ",4180,Yes,Other essential job,Other essential job,No
+Household appliances and electrical and electronic goods merchant wholesalers ,4195,Yes,Other essential job,Other essential job,No
+"Hardware, and plumbing and heating equipment, and supplies merchant wholesalers",4265,Yes,Other essential job,Other essential job,No
+"Machinery, equipment, and supplies merchant wholesalers     ",4270,Yes,Other essential job,Other essential job,No
+Recyclable material merchant wholesalers ,4280,No,None of the above,None of the above,No
+Miscellaneous durable goods merchant wholesalers    ,4290,No,None of the above,None of the above,No
+Paper and paper products merchant wholesalers ,4370,Yes,Other essential job,Other essential job,No
+"Drugs, sundries, and chemical and allied products merchant  wholesalers ",4380,Yes,Other essential job,Other essential job,No
+"Apparel, piece goods, and notions merchant wholesalers",4390,No,None of the above,None of the above,No
+Grocery and related product merchant wholesalers ,4470,Yes,Food and beverage store,Food and beverage store,No
+Farm product raw material merchant wholesalers ,4480,Yes,"Agriculture, forestry, etc","Agriculture, forestry, etc",No
+Petroleum and petroleum products merchant wholesalers ,4490,Yes,Other essential job,Other essential job,No
+Alcoholic beverages merchant wholesalers ,4560,Yes,None of the above,Food and beverage store,No
+Farm supplies merchant wholesalers ,4570,Yes,"Agriculture, forestry, etc","Agriculture, forestry, etc",No
+Miscellaneous nondurable goods merchant wholesalers ,4580,No,None of the above,Food and beverage store,No
+Wholesale electronic markets and agents and brokers ,4585,No,None of the above,None of the above,No
+Not specified wholesale trade,4590,No,None of the above,None of the above,No
+Automobile dealers ,4670,Yes,Other essential job,Other essential job,No
+Other motor vehicle dealers ,4680,No,None of the above,None of the above,No
+"Automotive parts, accessories, and tire stores",4690,Yes,Other essential job,Other essential job,No
+Furniture and home furnishings stores ,4770,No,None of the above,None of the above,No
+Household appliance stores ,4780,Yes,Other essential job,Other essential job,No
+Electronics Stores,4795,Yes,Other essential job,Other essential job,No
+Building material and supplies dealers  ,4870,Yes,Other essential job,Other essential job,No
+Hardware stores ,4880,Yes,Other essential job,Other essential job,No
+Lawn and garden equipment and supplies stores ,4890,Yes,Other essential job,Other essential job,No
+Supermarkets and other grocery (except convenience) stores,4971,Yes,Food and beverage store,Food and beverage store,No
+Convenience Stores,4972,Yes,Food and beverage store,Food and beverage store,No
+Specialty food stores,4980,Yes,Food and beverage store,Food and beverage store,No
+"Beer, wine, and liquor stores ",4990,Yes,None of the above,Food and beverage store,No
+Pharmacies and drug stores ,5070,Yes,Healthcare or death care,Healthcare or death care,No
+"Health and personal care, except drug, stores ",5080,No,None of the above,Healthcare or death care,No
+Gasoline stations ,5090,Yes,Food and beverage store,Food and beverage store,No
+Clothing stores ,5170,No,None of the above,None of the above,No
+Shoe stores ,5180,No,None of the above,None of the above,No
+"Jewelry, luggage, and leather goods stores ",5190,No,None of the above,None of the above,No
+"Sporting goods, and hobby and toy stores ",5275,No,None of the above,None of the above,No
+"Sewing, needlework, and piece goods stores ",5280,No,None of the above,None of the above,No
+Musical instrument and supplies stores ,5295,No,None of the above,None of the above,No
+Book stores and news dealers ,5370,Yes,Other essential job,Other essential job,No
+Department stores ,5381,No,None of the above,None of the above,No
+"General merchandise stores, including warehouse clubs and supercenters ",5391,Yes,Other essential job,Food and beverage store,No
+Florists,5470,Yes,Other essential job,Other essential job,No
+Office supplies and stationery stores ,5480,Yes,Other essential job,Other essential job,No
+Used merchandise stores ,5490,No,None of the above,None of the above,No
+"Gift, novelty, and souvenir shops ",5570,No,None of the above,None of the above,No
+Miscellaneous retail stores ,5580,No,None of the above,None of the above,No
+Electronic shopping and mail-order houses,5593,Yes,None of the above,None of the above,No
+Vending machine operators ,5670,No,None of the above,None of the above,No
+Fuel dealers ,5680,Yes,Other essential job,None of the above,No
+Other direct selling establishments,5690,No,None of the above,None of the above,No
+Not specified retail trade,5790,No,None of the above,None of the above,No
+Air transportation ,6070,Yes,None of the above,Public transit,No
+Rail transportation ,6080,Yes,Other essential job,Public transit,No
+Water transportation ,6090,Yes,Other essential job,Public transit,No
+Truck transportation ,6170,Yes,Other essential job,Public transit,No
+Bus service and urban transit ,6180,Yes,Public transit,Public transit,No
+Taxi and limousine service ,6190,Yes,Public transit,Public transit,No
+Pipeline transportation ,6270,Yes,Other essential job,Other essential job,No
+Scenic and sightseeing transportation ,6280,No,None of the above,None of the above,No
+Services incidental to transportation ,6290,Yes,Other essential job,Public transit,No
+Postal Service ,6370,Yes,USPS,USPS,No
+Couriers and messengers ,6380,Yes,Other essential job,USPS,No
+Warehousing and storage ,6390,Yes,Other essential job,Other essential job,No
+"Electric power generation, transmission and distribution",570,Yes,Other essential job,Other essential job,No
+Natural gas distribution ,580,Yes,Other essential job,Other essential job,No
+"Electric and gas, and other combinations ",590,Yes,Other essential job,Other essential job,No
+"Water, steam, air-conditioning, and irrigation systems ",670,Yes,Other essential job,Other essential job,No
+Sewage treatment facilities ,680,Yes,Other essential job,Other essential job,No
+Not specified utilities ,690,Yes,Other essential job,Other essential job,No
+Newspaper publishers,6470,Yes,Other essential job,Other essential job,No
+"Periodical, book, and directory publishers",6480,No,None of the above,None of the above,No
+Software publishers,6490,Yes,Other essential job,Other essential job,No
+Motion pictures and video industries,6570,No,None of the above,None of the above,No
+Sound recording industries,6590,No,None of the above,None of the above,No
+Broadcasting (except internet),6670,Yes,Other essential job,Other essential job,No
+Internet publishing and broadcasting and web search portals,6672,Yes,Other essential job,Other essential job,No
+Wired telecommunications carriers ,6680,Yes,Other essential job,Other essential job,No
+"Telecommunications, except wired telecommunications carriers ",6690,Yes,Other essential job,Other essential job,No
+"Data processing, hosting, and related services",6695,Yes,Other essential job,Other essential job,No
+Libraries and archives,6770,Yes,Other essential job,Other essential job,No
+"Other information services, except libraries and archives, and internet publishing and broadcasting and web search portals",6780,Yes,Other essential job,Other essential job,No
+Banking and related activities,6870,Yes,Other essential job,Other essential job,No
+"Savings institutions, including credit unions ",6880,Yes,Other essential job,Other essential job,No
+Nondepository credit and related activities,6890,Yes,Other essential job,Other essential job,No
+"Securities, commodities, funds, trusts, and other financial investments",6970,Yes,Other essential job,Other essential job,No
+Insurance carriers,6991,Yes,Other essential job,Other essential job,No
+"Agencies, brokerages, and other insurance related activities",6992,Yes,Other essential job,Other essential job,No
+"Lessors of real estate, and offices of real estate agents and brokers",7071,No,None of the above,None of the above,No
+"Real estate property managers, offices of real estate appraisers, and other activities related to real estate ",7072,No,None of the above,None of the above,No
+Automotive equipment rental and leasing ,7080,Yes,Other essential job,Other essential job,No
+Other consumer goods rental,7181,No,None of the above,None of the above,No
+"Commercial, industrial, and other intangible assets rental and leasing",7190,No,None of the above,None of the above,No
+Legal services ,7270,Yes,Other essential job,Other essential job,No
+"Accounting, tax preparation, bookkeeping, and payroll services",7280,Yes,Other essential job,Other essential job,No
+"Architectural, engineering, and related services ",7290,No,None of the above,None of the above,No
+Specialized design services ,7370,No,None of the above,None of the above,No
+Computer systems design and related services ,7380,Yes,Other essential job,Other essential job,No
+"Management, scientific, and technical consulting services",7390,No,None of the above,None of the above,No
+Scientific research and development services ,7460,No,None of the above,None of the above,No
+"Advertising, public relations, and related services",7470,No,None of the above,None of the above,No
+Veterinary services ,7480,Yes,Healthcare or death care,Healthcare or death care,No
+"Other professional, scientific, and technical services ",7490,No,None of the above,None of the above,No
+Management of companies and enterprises ,7570,Yes,Other essential job,Other essential job,No
+Employment services ,7580,No,None of the above,None of the above,No
+Business support services ,7590,No,None of the above,None of the above,No
+Travel arrangements and reservation services ,7670,No,None of the above,None of the above,No
+Investigation and security services ,7680,Yes,First response,First response,No
+Services to buildings and dwellings (except cleaning during construction and immediately after construction) ,7690,Yes,Other essential job,Other essential job,No
+Landscaping services,7770,Yes,Other essential job,Other essential job,No
+Other administrative and other support services ,7780,No,None of the above,None of the above,No
+Waste management and remediation services ,7790,Yes,Other essential job,Other essential job,No
+Elementary and secondary schools ,7860,Yes,K-12 school,K-12 school,No
+"Colleges, universities, and professional schools, including junior colleges",7870,Yes,Other schools,Other schools,No
+"Business, technical, and trade schools and training ",7880,Yes,Other schools,Other schools,No
+"Other schools and instruction, and educational support services ",7890,No,Other schools,Other schools,No
+Offices of physicians ,7970,Yes,Healthcare or death care,Healthcare or death care,No
+Offices of dentists ,7980,Yes,Healthcare or death care,Healthcare or death care,No
+Offices of chiropractors ,7990,Yes,Healthcare or death care,Healthcare or death care,No
+Offices of optometrists ,8070,Yes,Healthcare or death care,Healthcare or death care,No
+Offices of other health practitioners  ,8080,Yes,Healthcare or death care,Healthcare or death care,No
+Outpatient care centers ,8090,Yes,Healthcare or death care,Healthcare or death care,No
+Home health care services ,8170,Yes,Healthcare or death care,Healthcare or death care,No
+Other health care services ,8180,Yes,Healthcare or death care,Healthcare or death care,No
+"General medical and surgical hospitals, and specialty (except psychiatric and substance abuse) hospitals",8191,Yes,Healthcare or death care,Healthcare or death care,No
+Psychiatric and substance abuse hospitals,8192,Yes,Healthcare or death care,Healthcare or death care OR Social service,Yes
+Nursing care facilities (skilled nursing facilities),8270,Yes,Healthcare or death care,Healthcare or death care OR Social service,Yes
+"Residential care facilities, except skilled nursing facilities",8290,Yes,Social service,Social service,No
+Individual and family services ,8370,Yes,Social service,Social service,No
+"Community food and housing, and emergency services ",8380,Yes,First response,First response OR Social service,Yes
+Vocational rehabilitation services ,8390,Yes,Social service,Social service,No
+Child day care services ,8470,Yes,Preschool or daycare,Preschool or daycare,No
+Performing arts companies ,8561,No,None of the above,None of the above,No
+Spectator sports,8562,No,None of the above,None of the above,No
+"Promoters of performing arts, sports, and similar events, agents and managers for artists, athletes, entertainers, and other public figures ",8563,No,None of the above,None of the above,No
+"Independent artists, writers, and performers",8564,No,None of the above,None of the above,No
+"Museums, art galleries, historical sites, and similar institutions",8570,No,None of the above,None of the above,No
+Bowling centers ,8580,No,None of the above,None of the above,No
+"Other amusement, gambling, and recreation industries   ",8590,No,None of the above,None of the above,No
+Traveler accommodation ,8660,Yes,Other essential job,Other essential job,No
+"Recreational vehicle parks and camps, and rooming and boarding houses, dormitories, and workers' camps",8670,No,None of the above,None of the above,No
+Restaurants and other food services ,8680,Yes,Food and beverage store,Food and beverage store,No
+"Drinking places, alcoholic beverages ",8690,No,None of the above,None of the above,No
+Automotive repair and maintenance ,8770,Yes,Other essential job,Other essential job,No
+Car washes,8780,No,None of the above,None of the above,No
+Electronic and precision equipment repair and maintenance,8790,Yes,Other essential job,Other essential job,No
+Commercial and industrial machinery and equipment repair and maintenance,8870,Yes,Other essential job,Other essential job,No
+Personal and household goods repair and maintenance ,8891,No,None of the above,None of the above,No
+Barber shops ,8970,No,None of the above,None of the above,No
+Beauty salons ,8980,No,None of the above,None of the above,No
+Nail salons and other personal care services  ,8990,No,None of the above,None of the above,No
+Drycleaning and laundry services ,9070,Yes,Other essential job,Other essential job,No
+"Funeral homes, and cemeteries and crematories ",9080,Yes,Healthcare or death care,Healthcare or death care,No
+Other personal services ,9090,No,None of the above,None of the above,No
+Religious organizations ,9160,Yes,Other essential job,None of the above,No
+"Civic, social, advocacy organizations, and grantmaking and giving services",9170,No,None of the above,None of the above,No
+Labor unions,9180,No,None of the above,None of the above,No
+"Business, professional, political, and similar organizations",9190,No,None of the above,None of the above,No
+Private households ,9290,Yes,None of the above,None of the above,No
+Executive offices and legislative bodies ,9370,Yes,Other essential job,Other essential job,No
+Public finance activities ,9380,Yes,Other essential job,Other essential job,No
+Other general government and support ,9390,Yes,Other essential job,Other essential job,No
+"Justice, public order, and safety activities ",9470,Yes,First response,First response,No
+Administration of human resource programs  ,9480,Yes,Other essential job,Other essential job,No
+Administration of environmental quality and housing programs ,9490,Yes,Other essential job,Other essential job,No
+Administration of economic programs and space research,9570,Yes,Other essential job,Other essential job,No
+National security and international affairs ,9590,Yes,Other essential job,Other essential job,No
+U. S. Army,9670,No,None of the above,None of the above,No
+U. S. Air Force,9680,No,None of the above,None of the above,No
+U. S. Navy,9690,No,None of the above,None of the above,No
+U. S. Marines,9770,No,None of the above,None of the above,No
+U. S. Coast Guard,9780,No,None of the above,None of the above,No
+"Armed Forces, Branch not specified",9790,No,None of the above,None of the above,No
+Military Reserves or National Guard,9870,No,None of the above,None of the above,No
+Armed forces,9890,No,None of the above,None of the above,No
+No job,-1,No,No job,No job,No

@@ -1,0 +1,351 @@
+---
+title: "Proportion of time in each setting by respondent category"
+output: pdf_document
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,echo=FALSE)
+```
+
+```{r, warning=FALSE, message=FALSE,echo=FALSE}
+library(dplyr)
+library(knitr)
+library(binsreg)
+library(readr)
+library(tidyr)
+library(plyr)
+library(ggplot2)
+library(xtable)
+library(zoo)
+library(stargazer)
+library(tidycensus)
+library(gridExtra)
+library(naniar)
+library(psych)
+library(broom)
+library(purrr)
+library(kableExtra)
+library(fastDummies)
+library(covidcast)
+library(extrafont)
+library(stringr)
+```
+
+    
+ATUS notes:
+
+* Respondent file contains information on labor status obtained from CPS. We use this to categorize as we do CPS data.
+    + emp_status: 1 = Employed, at work. 2 = Employed, absent. 3 = Unemployed, on layoff. 4 = Unemployed, looking. 5 = Not in labor force.
+    + industry: census industry codes
+    + occupation: census occupation codes
+
+Get all data we will need:
+
+```{r}
+clean_vars <- read.csv("data_files/cleanvariables/atusresp_cleanvars_2020.csv")
+clean_vars_resp2021 <- read.csv("data_files/cleanvariables/atusresp_cleanvars_2021.csv")
+clean_vars_cps <- read.csv("data_files/cleanvariables/atuscps_cleanvars.csv")
+clean_vars_act <- read.csv("data_files/cleanvariables/atusact_cleanvars.csv")
+cic_to_pulse <- read.csv("data_files/cps_acs/crosswalk/cic_to_pulse.csv")
+coc_to_pulse <- read.csv("data_files/cps_acs/crosswalk/coc_to_pulse.csv")
+teleworkable <- read.csv("data_files/cps_acs/crosswalk/teleworkable.csv")
+```
+
+```{r}
+atusrespa <- read.delim("data_files/atus/2020/atusresp_2020.dat", header=TRUE, sep=",") %>%
+  select(clean_vars_resp2020$atusname) %>% 
+  purrr::set_names(clean_vars_resp2020$newname) %>%
+  mutate(year = 2020)
+```
+
+```{r}
+atusrespb <- read.delim("data_files/atus/2021/atusresp_2021.dat", header=TRUE, sep=",") %>%
+  select(clean_vars_resp2021$atusname) %>% 
+  purrr::set_names(clean_vars_resp2021$newname) %>%
+  mutate(year = 2021)
+```
+
+```{r}
+atusresp <- rbind(atusrespa,atusrespb)
+```
+
+Obtain job categories for all respondents: 
+
+```{r}
+atusresp <- atusresp %>% 
+  merge(.,cic_to_pulse,by="industry") %>%
+  merge(., coc_to_pulse,by=c("occupation","industry","industry_title"),all.x=TRUE) %>%
+  merge(.,teleworkable,by = "occupation",all.x=TRUE) %>%
+  mutate(teleworkable = ifelse(is.na(teleworkable),0,teleworkable),
+         setting = coalesce(occupation_based_setting,industry_based_setting)) %>% 
+  mutate(setting = as.character(setting),
+         casied = as.character(caseid)) %>%
+  mutate(setting = ifelse(emp_status %in% c(3,4),"Unemployed",
+                          ifelse(emp_status == 5,"NILF",setting))) %>%
+  mutate(top_category = ifelse(!(setting %in% c("NILF","Unemployed")),"Employed",setting))
+```
+
+New atus file:
+
+* atus-cps file contains information on the state and education level of respondents. Obtained by matching with CPS responses. Converting state fips codes into state name and education variable into 4 education categories:
+    + 31-38 = "less than high school graduate"
+    + 39 = "high school graduate or GED"
+    + 40-42 = "some college or associate's degree"
+    + 43-46 = "bachelor's degree or higher"
+    
+* File contains responses for household members as well. If atus_respondent = 1, it indicates CPS file corresponds to person interviewed for ATUS
+
+```{r}
+fips <- unique(get(data("fips_codes")) %>% 
+              select(state_code,state_name) %>% 
+              dplyr::rename("state" = "state_code") %>%
+              mutate(state = as.numeric(state)))
+```
+
+```{r}
+atuscpsa <- read.delim("data_files/atus/2020/atuscps_2020.dat", header=TRUE, sep=",") %>%
+  select(clean_vars_cps$atusname) %>% 
+  purrr::set_names(clean_vars_cps$newname) %>%
+  mutate(year = 2020)
+```
+
+```{r}
+atuscpsb <- read.delim("data_files/atus/2021/atuscps_2021.dat", header=TRUE, sep=",") %>%
+  select(clean_vars_cps$atusname) %>% 
+  purrr::set_names(clean_vars_cps$newname) %>%
+  mutate(year = 2021)
+```
+
+```{r}
+atuscps <- rbind(atuscpsa,atuscpsb)
+```
+
+```{r}
+atuscps <- atuscps %>%
+  filter(atus_respondent == 1) %>%
+  merge(.,fips,by="state") %>%
+  mutate(state = state_name) %>%
+  select(-state_name) %>%
+  mutate(caseid = as.character(caseid)) %>%
+  mutate(education = case_when(
+    education <= 38 ~ "Less than HS graduate",
+    education == 39 ~ "HS graduate or GED",
+    education > 39 & education <= 42 ~ "Some college or associate's degree",
+    education > 42 & education <= 46 ~ "Bachelor's degree or higher"
+  ))
+```
+
+```{r}
+atusresp <- merge(atusresp %>% mutate(caseid = as.character(caseid)),atuscps %>% mutate(caseid = as.character(caseid)),by=c("caseid","year"))
+```
+
+Now, we can merge with activity data to get time distribution across settings. ATUS activity file includes activity-level information collected in ATUS, including activity code, location, duration, activity start and stop times. Note, two different variables available for the cumulative duration of an activity. In the one we use, the last activity is truncated at 4 am.
+
+Location is not collected for activities with activity codes of 0101xx (sleeping), 0102xx (grooming), 0104xx (personal activites), 500105 (none of your business), or 500106 (gap can't remember). We also assume sleeping, grooming, and personal activities occured in the household. Finally, we remove location code 89, "Unspecified place"
+
+
+```{r}
+atusacta <- read.delim("data_files/atus/2020/atusact_2020.dat", header=TRUE, sep=",") %>%
+  select(clean_vars_act$atusname) %>% 
+  purrr::set_names(clean_vars_act$newname) %>%
+  mutate(year = 2020)
+```
+
+```{r}
+atusactb <- read.delim("data_files/atus/2021/atusact_2021.dat", header=TRUE, sep=",") %>%
+  select(clean_vars_act$atusname) %>% 
+  purrr::set_names(clean_vars_act$newname) %>%
+  mutate(year = 2021)
+```
+
+```{r}
+atusact <- rbind(atusacta,atusactb)
+```
+
+
+```{r}
+atusact <- atusact %>%
+  mutate(location = ifelse(tier1code == 1 & tier2code %in% c(1,2,3),1,location)) %>%
+  filter(location != -1 & location != 89) %>%
+  mutate(caseid = as.character(caseid)) %>%
+  merge(.,atusresp,by=c("caseid","year"))
+```
+
+
+
+We categorize respondents as in-person if they spend time working outside the home, unless outside the home places are those where remote employees might spend time working:
+
+* 3 = "Someone else's home"
+* 4 = "Restaurant or bar"
+* 7 = "Other store/mall"
+* 9 = "Outdoors away from home"
+* 10 = "Library"
+* 12-21 = "Modes of transport"
+
+How to distinguish those that might be doing "in-person" work in these settings (e.g., a waitress)? We check whether their job is categorized as "teleworkable"
+
+In sum:
+
+* In-person employees - respondents spending any work time outside the home and these "remote work" settings
+* Remote employees - respondents who spend all work time in the home or less than 50% in these settings
+
+*To keep in mind for later:* For remote respondents, some leisure time and some home time will be time spent working. 
+
+
+```{r}
+remote <- atusact %>%
+  filter(tier1code == 5 & tier2code == 1 & tier3code == 1 & top_category == "Employed") %>%
+  dplyr::mutate(top_location = ifelse(location == 1, "Home",
+                                      ifelse(location %in% c(3,4,7,9,10) | 
+                                               (location > 11 & location < 22),"Remote_workplace","Other"))) %>%
+  dplyr::group_by(caseid,top_category,teleworkable,top_location) %>%
+  dplyr::summarize(work_time = sum(duration)) %>%
+  spread(top_location,work_time) %>%
+  replace(is.na(.),0) %>%
+  mutate(Total = Home + Other + Remote_workplace,
+         Home = Home/Total,
+         Other = Other/Total,
+         Remote_workplace = Remote_workplace/Total) %>%
+  mutate(is_remote = ifelse((Home == 1 | Other == 0 & Remote_workplace <= 0.5 | Other == 0 & teleworkable == 1),1,0)) %>%
+  filter(is_remote == 1)
+```
+
+
+```{r}
+atusact <- atusact %>% 
+  mutate(top_category = ifelse(caseid %in% remote$caseid,"Remote",top_category)) %>%
+  mutate(top_category = ifelse(top_category == "Employed", "In-person",top_category))
+```
+
+```{r}
+atusact %>%
+  filter(setting == "K-12 school" & tier1code == 5 & tier2code == 1) %>%
+  select(location,caseid) %>%
+  unique() %>%
+  dplyr::mutate(location = case_when(
+    location == 1 ~ "Home",
+    location == 2 ~ "Workplace",
+    location == 3 ~ "Someone else's home",
+    location == 4 ~ "Restaurant or bar",
+    location == 5 ~ "Place of worship",
+    location == 7 ~ "Other store/mall",
+    location == 8 ~ "School",
+    location == 9 ~ "Outdoors away from home",
+    location == 11 ~ "Other place",
+  location == 12 ~ "Car, truck, or motorcycle (driver)"
+  )) %>%
+  dplyr::group_by(location) %>%
+  dplyr::summarise(count = n()) %>%
+  ggplot(aes(x=reorder(location,-count),y=count)) +
+  geom_col(color = "black",fill="slategray3",position='dodge',size=0.4,width=0.8) +
+  theme_bw() + 
+  labs(x="Setting",y="Number of K-12 workers",title = "Setting of work hours for K-12 workers") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + 
+  theme(text = element_text(family = "Georgia",size=11)) 
+ggsave("figures/k-12workers_setting.png")
+```
+
+
+```{r}
+atusact %>%
+  filter(setting == "K-12 school" & tier1code == 5 & tier2code == 1) %>%
+  dplyr::group_by(location,caseid) %>%
+  dplyr::mutate(location = case_when(
+    location == 1 ~ "Home",
+    location == 2 ~ "Workplace",
+    location == 3 ~ "Someone else's home",
+    location == 4 ~ "Restaurant or bar",
+    location == 5 ~ "Place of worship",
+    location == 7 ~ "Other store/mall",
+    location == 8 ~ "School",
+    location == 9 ~ "Outdoors away from home",
+    location == 11 ~ "Other place",
+  location == 12 ~ "Car, truck, or motorcycle (driver)"
+  )) %>%
+  dplyr::summarise(time = sum(duration)/60) %>%
+  dplyr::summarise(time = mean(time)) %>%
+  ggplot(aes(x=reorder(location,-time),y=time)) +
+  geom_col(color = "black",fill="slategray3",position='dodge',size=0.4,width=0.8) +
+  theme_bw() + 
+  labs(x="Setting",y="Avg. hours",title = "Setting of work hours for K-12 workers") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + 
+  theme(text = element_text(family = "Georgia",size=11)) 
+ggsave("figures/k-12workers_hours.png")
+```
+
+
+
+
+```{r}
+atusact <- atusact %>%
+  mutate(top_location = ifelse(location == 1,"Home","Away from home"),
+         activity = ifelse(tier1code == 5 & tier2code == 1, "Work", "Not work")) %>%
+  dplyr::mutate(type = case_when(
+    top_location == "Home" ~ "Home",
+    top_location == "Away from home" & (activity == "Not work" | top_category != "In-person") ~ "Leisure",
+    top_location == "Away from home" & activity == "Work" & top_category == "In-person" ~ "Work")) %>%
+  dplyr::mutate(date = as.yearmon(paste(year,month), "%Y %m")) 
+
+atusact %>%
+  dplyr::group_by(top_category,caseid,type,state,date,weight) %>%
+  dplyr::summarise(time = sum(duration)/60) %>%
+  ungroup() %>%
+  complete(nesting(caseid,date,top_category,weight),type,fill=list(time=0)) %>%
+  group_by(date,top_category,type) %>%
+  dplyr::summarise(time = weighted.mean(time,weight)) %>%
+  filter(date > "Mar 2020" & !(type == "Work" & top_category != "In-person")) %>%
+  ggplot(aes(x=date,y=time,color=type)) + 
+  geom_line() + 
+  facet_wrap(~top_category) +
+  theme_bw() + 
+  labs(x="Date",y="Avg. number of hours",title = "Time in each setting by group") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + 
+  theme(text = element_text(family = "Georgia",size=12))
+
+ggsave("figures/time_per_setting.png")
+```
+
+```{r}
+var <- atusact %>%
+  dplyr::group_by(top_category,caseid,type,state,date,weight) %>%
+  dplyr::summarise(time = sum(duration)/60) %>%
+  ungroup() %>%
+  complete(nesting(caseid,date,top_category,weight),type,fill=list(time=0)) %>%
+  group_by(date,top_category,type) %>%
+  dplyr::summarise(time = weighted.mean(time,weight)) %>%
+  filter(date > "Mar 2020" & !(type == "Work" & top_category != "In-person")) %>%
+  dplyr::group_by(top_category,type) %>%
+  dplyr::summarise(variance = var(time))
+kbl(var, align = "c",booktabs = T,"latex") %>%
+  kable_classic(full_width = F) %>%
+  kable_styling(latex_options = "hold_position") %>%
+  collapse_rows(columns = 1:2, valign = "middle")
+```
+
+
+
+For remote and in-person workers, how much work is happening at home or away from home:
+
+```{r,fig.height=3,fig.width=4}
+atusact %>%
+  filter(top_category %in% c("In-person","Remote") & activity == "Work") %>%
+  dplyr::group_by(date,top_category,weight,caseid,top_location) %>%
+  dplyr::summarise(time = sum(duration)/60) %>%
+  ungroup() %>%
+  complete(nesting(caseid,date,top_category,weight),top_location,fill=list(time=0)) %>%
+  dplyr::group_by(date,top_category,top_location) %>%
+  dplyr::summarise(time = weighted.mean(time,weight)) %>%
+  filter(date > "Mar 2020") %>%
+  dplyr::rename(location = top_location) %>%
+  ggplot(aes(x=date,y=time,color=location)) + 
+  geom_line() +
+  facet_wrap(~top_category,ncol=1) +
+  theme_bw() + 
+  labs(x="Date",y="Avg. hours spent",title = "Work hours in setting: Remote and in-person workers") + 
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + 
+  theme(text = element_text(family = "Georgia",size=11)) 
+ggsave("figures/time_home_away_remote.png")
+```
+
+

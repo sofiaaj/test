@@ -1,0 +1,303 @@
+---
+title: "Categorizing respondents as risk-takers or risk-averse"
+output: pdf_document
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,echo=FALSE)
+```
+
+```{r, warning=FALSE, message=FALSE,echo=FALSE}
+library(dplyr)
+library(knitr)
+library(binsreg)
+library(readr)
+library(tidyr)
+library(plyr)
+library(ggplot2)
+library(xtable)
+library(stargazer)
+library(tidycensus)
+library(gridExtra)
+library(naniar)
+library(psych)
+library(broom)
+library(purrr)
+library(fastDummies)
+library(covidcast)
+library(extrafont)
+library(stringr)
+```
+
+```{r}
+cbp1 <- c("#999999", "#E69F00", "#56B4E9", "#009E73",
+          "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+```
+
+
+```{r,message=FALSE,warning=FALSE}
+clean_vars <- read.csv("data_files/cleanvariables/yougov_cleanvars.csv")
+```
+
+```{r}
+yougov <- read.csv("data_files/yougov/yougov.csv") %>%
+  dplyr::select(clean_vars$yougovname) %>% 
+  purrr::set_names(clean_vars$newname) %>%
+  mutate(date = as.Date(substr(date,1,10),format="%d/%m/%Y"))
+```
+
+
+Relevant variables for risky behavior:
+
+"Thinking about the last 7 days... how often have you taken the following measures to protect yourself or others from coronavirus? As a reminder, please exclude any measures that you have already taken for reasons other than coronavirus."
+
+1. **washed_hands:** "...Washed hands with soap and water"
+2. **hand_sanitizer:** "...Used hand sanitiser"
+3. **avoid_contact_covid:** "...Avoided contact with people who have symptoms or you think may have been exposed to the coronavirus"
+4. **avoid_public_transit:** "...Avoided taking public transport"
+4. **avoid_guests:** "...Avoided having guests to your home"
+5. **avoid_gatherings_small:** "...Avoided small social gatherings (not more than 2 people)"
+6. **avoid_gatherings_medium:** "...Avoided medium-sized social gatherings (between 3 and 10 people)"
+7. **avoid_gatherings_large:** "...Avoided large-sized social gatherings (more than 10 people)"
+8. **avoid_shops:** "...Avoided going to shops"
+9. **avoid_public_events:** "...Avoided attending public events, such as sports matches, festivals, theatres, clubs, or going to religious services"
+10. **avoid_hh_indoors:** "...Avoided mixing with other households indoors"
+11. **maskgrocery:** "...Worn a face mask inside a grocery store / supermarket"
+12. **maskclotheshop:** "...Worn a face mask inside a clothing / footwear shop"
+13. **masktransit:** "...Worn a face mask on public transportation"
+
+The following answer choices are available for these questions:
+
+* Always
+* Frequently
+* Sometimes
+* Rarely
+* Not at all
+
+Our current method uses the last three variables (maskgrocery, maskclotheshop, and masktransit) to categorize respondents as risky or not risky. Ideally, if someone rarely or does not at all wear a mask in these settings, we would know they are risk-takers. However, we are concerned that someone might select these options because they haven't been to the setting. To give an example, if someone says they haven't at all worn a mask in public transport we want to know if this is because they are risky or because they simply haven't been on public transport. To figure this out, we use the question: *“Thinking about the last 7 days... how often have you [avoided taking public transport] to protect yourself or others from coronavirus? As a reminder, please exclude any measures that you have already taken for reasons other than coronavirus.”*
+
+Our goal is to use this question to figure out if someone has taken public transport the last 7 days. If we think they have, then they must indicate to have worn a mask at least some of the time. However, if they have not, then their mask-wearing behavior in the setting becomes irrelevant.
+
+Responses ‘always’ and ‘not at all’ seem to me as the most straight-forward to interpret:
+
+* Always
+    - Person who has not taken public transport because they are being covid-cautious. This person would be considered risk-averse,
+        + One issue you raised was that someone might "avoid" public transport for reasons other than covid (e.g., they have a car and drive everywhere) so
+        they might *not* actually be risk averse even if they're never in the setting. Yet, I think the way the question is asked helps us avoid the problem
+        by explicitly asking respondents to "exclude any measures that you have already taken for reasons other than coronavirus". So, if someone does not
+        take public transport because they have a car, their response to the question "Avoided taking public transport" would be "not at all". 
+* Not at all
+    - Person who has taken public transport with the same frequency as they would regardless of covid. This could mean:
+        + They haven’t taken any public transport for other reasons (e.g., they have a car)
+        + They have taken public transport as they normally would 
+
+
+The responses “Frequently”, “Sometimes”, and “Rarely” are harder to interpret. The most straightforward example:
+
+* Person who used to take the bus every single day but reduced their bus rides because of covid concerns. They didn’t reduce bus rides fully or else they would have said “Always” so we know they spent at least some time on the bus.
+    - For example, person X used to take the bus to work 5 days a week, but due to covid concerns they were able to get a ride with a friend for 4 out of
+    the 5 days. Because they spent *some* time on the bus, we would expect them to have worn a mask.
+
+But the question is, do we also believe this slightly more convoluted example:
+
+* Person who never used the bus this week but only some of the times due to covid concerns
+    - For example, person X was going to take the bus on Wednesday, but the bus was delayed and person X was forced to walk. On Thursday, person X was going
+    to ride the bus, but they got nervous about covid and decided to walk instead. 
+
+I honestly don’t feel super worried about this kind of example. In general, my sense is that:
+
+* someone who says they ‘frequently’, ‘sometimes’, or ‘rarely’ avoided taking public transport are people who spent at least some time on the bus. 
+* someone who says they ‘always’ avoided taking public transport did not spend any time on the bus because they were worried about covid
+* someone who did ‘not at all’ avoid taking public transport might have spent a lot of time on public transport or spent no time on it for reasons other
+than covid concerns
+    - this makes it the least informative response because we don’t know what to expect for mask behavior, and we don’t know whether they are risk-takers or
+    not
+    
+Thus, for each setting we have three possibilities:
+
+* Risk-averse: If they "Always", "Frequently", or "Sometimes" wear a mask and/or they "Always" avoided the setting
+* Risk-taker: If they "Frequently", "Sometimes", or "Rarely" avoid the setting and "rarely" or "not at all" wear a mask
+* Unknown: If they "Not at all" avoided the setting and "rarely" or "not at all" wear a mask
+
+Now we want to know:
+
+1. How do we categorize those "unknown" respondents?
+2. Once we have risk-level for each setting, how do we categorize the respondent overall? If they are risky in one setting? If they are risky in two settings? Etc. 
+
+To do this, I checked the different permutations of risk by setting with the average of the following variables (where always = 5 and not at all = 1)
+
+1. washed_hands: "...Washed hands with soap and water"
+2. hand_sanitizer: "...Used hand sanitiser"
+3. avoid_contact_covid: "...Avoided contact with people who have symptoms or you think may have been exposed to the coronavirus"
+4. avoid_guests: "...Avoided having guests to your home"
+5. avoid_gatherings_small: "...Avoided small social gatherings (not more than 2 people)"
+6. avoid_gatherings_medium: "...Avoided medium-sized social gatherings (between 3 and 10 people)"
+7. avoid_gatherings_large: "...Avoided large-sized social gatherings (more than 10 people)"
+8. avoid_public_events: "...Avoided attending public events, such as sports matches, festivals, theatres, clubs, or going to religious services"
+9. avoid_hh_indoors: "...Avoided mixing with other households indoors"
+
+
+
+```{r}
+yougov <- yougov %>% 
+  filter(date >= "2020-06-24") %>%
+  mutate(risky_shop = ifelse(maskclotheshop %in% c("Always","Frequently","Sometimes") | avoid_shops == "Always",0,
+                                      ifelse(maskclotheshop == "Not at all" & avoid_shops == "Not at all",-1,1)),
+         risky_grocery = ifelse(maskgrocery %in% c("Always","Frequently","Sometimes") | avoid_shops == "Always",0,
+                                ifelse(maskgrocery == "Not at all" & avoid_shops == "Not at all",-1,1)),
+         risky_transport = ifelse(masktransit %in% c("Always","Frequently","Sometimes") | avoid_public_transit == "Always",0,
+                                  ifelse(masktransit == "Not at all" & avoid_public_transit == "Not at all",-1,1)),)
+```
+
+
+```{r}
+prep <- yougov %>%
+  select(avoid_contact_covid,
+         avoid_shops,
+         maskclotheshop,
+         maskgrocery,
+         masktransit,
+         avoid_public_transit,
+         avoid_gatherings_small,
+         avoid_gatherings_medium,
+         avoid_gatherings_large,
+         avoid_guests,
+         avoid_hh_indoors,
+         avoid_public_events,
+         hand_sanitizer,
+         washed_hands,
+         risky_shop,
+         risky_grocery,
+         risky_transport) %>%
+  mutate_all(as.character) %>%
+  dplyr::mutate(id = row_number()) %>%
+  gather(behavior,frequency,-risky_shop,-risky_grocery,-risky_transport,-id) %>%
+  filter(frequency != " ") %>%
+  dplyr::mutate(frequency = case_when(
+                  frequency == "Always" ~ 5,
+                  frequency == "Frequently" ~ 4,
+                  frequency == "Sometimes" ~ 3,
+                  frequency == "Rarely" ~ 2,
+                  frequency == "Not at all" ~ 1)) %>%
+  mutate_at(c("risky_shop","risky_grocery","risky_transport"),
+            recode,
+            "1" = "Risky",
+            "0" = "Not risky",
+            "-1" = "Unknown") %>%
+  mutate(combine = paste0("Shop:",risky_shop," + Grocery:",risky_grocery," + Transport:",risky_transport))
+```
+
+\vspace{15pt}
+
+```{r}
+prep %>%
+  dplyr::group_by(risky_shop,risky_grocery,risky_transport,id) %>%
+  dplyr::summarise(risky_avg = mean(frequency,na.rm = TRUE)) %>%
+  dplyr::summarise(risky_avg = mean(risky_avg),
+                   total = n()) %>%
+  arrange(risky_avg) %>%
+  kable()
+```
+
+
+Looking at the data, my instinct would be to recategorize "Unknown" as risky for each setting. Then, I would categorize any respondents with two or more risky settings as risky overall (eg, choose based on majority). Doing this we obtain the following totals:
+
+\vspace{15pt}
+
+```{r}
+yougov <- yougov %>% 
+  select(avoid_contact_covid,
+         avoid_gatherings_small,
+         avoid_gatherings_medium,
+         avoid_gatherings_large,
+         avoid_guests,
+         avoid_hh_indoors,
+         avoid_public_events,
+         hand_sanitizer,
+         washed_hands,
+         risky_shop,
+         risky_grocery,
+         risky_transport) %>%
+  mutate_all(as.character) %>% 
+  mutate_at(c("risky_shop","risky_grocery","risky_transport"),
+            recode,
+            "-1" = "1") %>%
+  mutate(is_risky = ifelse(as.numeric(risky_shop) + as.numeric(risky_grocery) + as.numeric(risky_transport) >= 2,1,0))
+```
+
+```{r}
+yougov %>%
+  mutate(is_risky = ifelse(is_risky==0,"Not Risky","Risky")) %>%
+  group_by(is_risky) %>%
+  dplyr::summarise(count = n()) %>%
+  dplyr::mutate(percent = count/sum(count)) %>%
+  kable()
+```
+
+Now, looking at different behaviors by group:
+
+```{r}
+yougov <- yougov %>% 
+  gather(behavior,frequency,-risky_shop,-risky_grocery,-risky_transport,-is_risky) %>%
+  filter(frequency != " ") %>%
+  dplyr::mutate(is_risky = as.factor(is_risky),
+                frequency = factor(frequency,
+                                   levels = c("Not at all","Rarely","Sometimes","Frequently","Always"))) %>%
+  dplyr::group_by(is_risky,behavior,frequency) %>%
+  dplyr::summarise(count = n()) %>%
+  dplyr::mutate(total = sum(count),
+                percent = count / total,
+                is_risky = ifelse(is_risky == 1,"Risk-taker","Risk-averse"))
+yougov %>%  
+  ggplot(aes(x=frequency,y=percent,fill=is_risky)) + 
+  geom_col(position = 'dodge') + 
+  facet_wrap(~behavior) +
+  theme_minimal() + 
+  labs(x="Frequency",y="% of group",title = "Behavior by group") + 
+  theme(text = element_text(family = "Georgia",size=9)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  scale_fill_brewer("Riskiness",palette="Set2")
+```
+
+\vspace{15pt}
+
+Collapsing to look at averages where "Always" = 5 and "Not at all" = 1
+
+```{r}
+yougov %>% 
+  dplyr::mutate(frequency = case_when(
+                  frequency == "Always" ~ 5,
+                  frequency == "Frequently" ~ 4,
+                  frequency == "Sometimes" ~ 3,
+                  frequency == "Rarely" ~ 2,
+                  frequency == "Not at all" ~ 1),
+                sum = percent * frequency) %>%
+  dplyr::group_by(is_risky,behavior) %>%
+  dplyr::summarise(score = sum(sum)) %>%
+  spread(is_risky,score) %>%
+  kable()
+```
+
+We estimate that around 80% of Americans were risk-averse during the time of the survey. To sanity check our estimate, we use a different survey conducted by the NYTimes on mask wearing behavior, obtaining a similar result:
+
+```{r}
+nytimes <- read_csv(url("https://raw.githubusercontent.com/nytimes/covid-19-data/master/mask-use/mask-use-by-county.csv"))
+```
+
+```{r}
+pops <- get(data("county_census")) %>% 
+  dplyr::rename("COUNTYFP" = "FIPS") %>%
+  dplyr::mutate(COUNTYFP = as.numeric(COUNTYFP)) %>%
+  select(COUNTYFP,POPESTIMATE2019)
+```
+
+
+```{r}
+merge(nytimes,pops,by="COUNTYFP") %>%
+  dplyr::mutate(risk_averse = FREQUENTLY + ALWAYS,
+                risk_taker = NEVER + RARELY + SOMETIMES) %>%
+  dplyr::summarise('Risk Averse %' = weighted.mean(risk_averse,POPESTIMATE2019,na.rm=TRUE),
+                   'Risk Taker %' = weighted.mean(risk_taker,POPESTIMATE2019,na.rm=TRUE)) %>%
+  kable()
+```
+

@@ -1,0 +1,323 @@
+---
+title: "IPF Review"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(message=FALSE,warning=FALSE,echo=FALSE,comment=NA)
+```
+
+```{r}
+library(dplyr)
+library(kableExtra)
+library(magick)
+library(ipfr)
+library(mipfp)
+library(tidyr)
+library(devtools)
+library(anesrake)
+```
+
+During our meeting a couple weeks ago, we discussed the IPF procedure we would use to distribute cases between home, leisure, and work. Using the [CDC study](https://www.cdc.gov/mmwr/volumes/69/wr/mm6926e3.htm?s_cid=mm6926e3_w), we can estimate the proportion of total cases that happened in each setting, but we only want to impose this ratio on the entire population and not within each racial or ethnic group or within each job. 
+
+To illustrate with an example in which we only have 2 states, 2 racial-ethnic groups, and 2 jobs with the following expected values:
+
+```{r}
+state <- c("CA","CA","CA","CA","AL","AL","AL","AL")
+race <- c("Hispanic","Hispanic","White","White","Hispanic","Hispanic","White","White")
+job <- c(replicate(4,c("Healthcare","K-12"),simplify = TRUE))
+work_covid <- c(12,11,32,22,1,1,20,9)
+leisure_covid <- c(11,9,28,19,2,1,18,9)
+home_covid <- c(13,11,30,19,3,2,19,8)
+no_covid <- c(217,210,1041,784,5,4,239,124)
+ev <- data.frame(state,race,job,work_covid,leisure_covid,home_covid,no_covid)
+```
+
+```{r}
+kbl(ev, align = "c",booktabs = T,"latex") %>%
+  kable_classic(full_width = F) %>%
+  kable_styling(latex_options = "hold_position") %>%
+  collapse_rows(columns = 1:2, valign = "middle")
+```
+
+Let's say we know that:
+
+* There were 5000 total covid cases (and 11,000 people not infected). We estimate 50% occured at home, 30% at work, and 20% during leisure.
+* The total populations for each job x race x state were:
+
+```{r}
+state <- c("CA","CA","CA","CA","AL","AL","AL","AL")
+race <- c("Hispanic","Hispanic","White","White","Hispanic","Hispanic","White","White")
+job <- c(replicate(4,c("Healthcare","K-12"),simplify = TRUE))
+population <- c(1000,1200,5000,4000,500,800,2000,1500)
+pop <- data.frame(state,race,job,population)
+kbl(pop, align = "c",booktabs = T,"latex") %>%
+  kable_classic(full_width = F) %>%
+  kable_styling(latex_options = "hold_position") %>%
+  collapse_rows(columns = 1:2, valign = "middle")
+```
+
+
+We also have an estimate for the total number of infections in each state x racial-ethnic group. We know, in other words, what the work, leasure, and home columns for Hispanic people in California should sum to, what the same columns in Alabama should sum to, etc. To give some dummy data:
+
+* Total cases CA, Hispanic: 800
+* Total cases CA, white: 2500
+* Total cases AL, Hispanic: 500
+* Total cases AL, white: 1200
+
+We perform the following steps repeatedly until it converges (where $\odot$ and $\oslash$ represent piece-wise multiplication and division): 
+
+
+\begin{align*}
+M & = M \odot (xv^T)  \oslash (Mvv^T) \\
+M & = M \odot (uy^T)  \oslash (uu^TM)
+\end{align*}
+
+
+Where $M$ is the original matrix of expected values, $x$ is the vector of desired row totals (population estimates), $y$ is the vector of desired column totals (case estimates), and $u$ and $v$ are all-ones vectors the size of $x$ and $y$, respectively. Looping through these two steps would allow us match known population and infection totals for each setting. However, we would not obtain the correct total number of covid cases for each state x racial-ethnic group. To adjust for this remaining data, we can add a third step to the loop. We define 5 new matrices:
+
+\vspace{4pt}
+
+$A = \begin{bmatrix}
+1 & 1 & 1 & 0 \\ 
+1 & 1 & 1 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+\end{bmatrix} 
+B = \begin{bmatrix}
+0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 \\ 
+1 & 1 & 1 & 0 \\ 
+1 & 1 & 1 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+\end{bmatrix} 
+C = \begin{bmatrix}
+0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+1 & 1 & 1 & 0 \\ 
+1 & 1 & 1 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+\end{bmatrix}
+D = \begin{bmatrix}
+0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 \\ 
+1 & 1 & 1 & 0 \\ 
+1 & 1 & 1 & 0 \\ 
+\end{bmatrix}
+E = \begin{bmatrix}
+0 & 0 & 0 & 1 \\
+0 & 0 & 0 & 1 \\ 
+0 & 0 & 0 & 1 \\ 
+0 & 0 & 0 & 1 \\ 
+0 & 0 & 0 & 1 \\ 
+0 & 0 & 0 & 1 \\ 
+0 & 0 & 0 & 1 \\ 
+0 & 0 & 0 & 1 \\ 
+\end{bmatrix}$
+
+\vspace{4pt}
+And compute the final step:
+
+$$
+M = M \odot (\frac{800A}{M:A} + \frac{2500B}{M:B} + \frac{500C}{M:C} + \frac{1200D}{M:D} + E)
+$$
+
+```{r}
+m <- as.matrix(ev[,4:7])
+x <- c(1000,1200,5000,4000,500,800,2000,1500)
+y <- c(1500,1000,2500,11000)
+u <- rep(1,length(x))
+v <- rep(1,length(y))
+a <- rbind(c(1,1,1,0),c(1,1,1,0),c(0,0,0,0),c(0,0,0,0),c(0,0,0,0),c(0,0,0,0),c(0,0,0,0),c(0,0,0,0))
+b <- rbind(c(0,0,0,0),c(0,0,0,0),c(1,1,1,0),c(1,1,1,0),c(0,0,0,0),c(0,0,0,0),c(0,0,0,0),c(0,0,0,0))
+c <- rbind(c(0,0,0,0),c(0,0,0,0),c(0,0,0,0),c(0,0,0,0),c(1,1,1,0),c(1,1,1,0),c(0,0,0,0),c(0,0,0,0))
+d <- rbind(c(0,0,0,0),c(0,0,0,0),c(0,0,0,0),c(0,0,0,0),c(0,0,0,0),c(0,0,0,0),c(1,1,1,0),c(1,1,1,0))
+e <- rbind(c(0,0,0,1),c(0,0,0,1),c(0,0,0,1),c(0,0,0,1),c(0,0,0,1),c(0,0,0,1),c(0,0,0,1),c(0,0,0,1))
+
+for(i in 0:50){
+  m <- m * (x %*% t(v)) / (m %*% v %*% t(v))
+  m <- m * (u %*% t(y)) / (u %*% t(u) %*% m)
+  m <- m * (800*a/sum(m*a) + 2500*b/sum(m*b) + 500*c/sum(m*c) + 1200*d/sum(m*d) + e)
+}
+```
+
+\vspace{4pt}
+
+Finally, we obtain: 
+
+\vspace{4pt}
+
+```{r}
+method1 <- data.frame(state,race,job,m) %>% 
+  arrange(-desc(state))
+col_order <- c("state","race","job","home_covid", "work_covid", "leisure_covid","no_covid")
+method1 <- method1[, col_order]
+kbl(method1, align = "c",booktabs = T,"latex") %>%
+  kable_classic(full_width = F) %>%
+  kable_styling(latex_options = "hold_position") %>%
+  collapse_rows(columns = 1:2, valign = "middle")
+```
+
+
+We can also achieve this with a raking package. Trying with [anesrake](https://cran.r-project.org/web/packages/anesrake/anesrake.pdf) package:
+
+```{r}
+state <- c("CA","CA","CA","CA","AL","AL","AL","AL")
+race <- c("Hispanic","Hispanic","White","White","Hispanic","Hispanic","White","White")
+job <- c(replicate(4,c("Healthcare","K-12"),simplify = TRUE))
+work_covid <- c(12,11,32,22,1,1,20,9)
+leisure_covid <- c(11,9,28,19,2,1,18,9)
+home_covid <- c(13,11,30,19,3,2,19,8)
+no_covid <- c(217,210,1041,784,5,4,239,124)
+ev <- data.frame(state,race,job,work_covid,leisure_covid,home_covid,no_covid)
+```
+
+Confirming we obtain the same results when we rake the collapsed date view. That is, a row for each state x race x job x infection combination but weighted accordingly:
+
+```{r}
+rake_df <- as.data.frame(ev %>% gather(type,weight,-state,-race,-job)) %>%
+  mutate(covid = ifelse(type == "no_covid","no","yes"))
+```
+
+```{r}
+#Setting targets
+rk_type <- c(1500,1000,2500,11000)
+names(rk_type) <- c("work_covid","leisure_covid","home_covid","no_covid")
+rk_state_race_job <- c(1000,1200,5000,4000,500,800,2000,1500)
+names(rk_state_race_job) <- c("CA:Hispanic:Healthcare",
+                              "CA:Hispanic:K-12",
+                              "CA:White:Healthcare",
+                              "CA:White:K-12",
+                              "AL:Hispanic:Healthcare",
+                              "AL:Hispanic:K-12",
+                              "AL:White:Healthcare",
+                              "AL:White:K-12")
+rk_state_race_covid <- c(800,1400,2500,6500,500,800,1200,2300)
+names(rk_state_race_covid) <- c("CA:Hispanic:yes",
+                   "CA:Hispanic:no",
+                   "CA:White:yes",
+                   "CA:White:no",
+                   "AL:Hispanic:yes",
+                   "AL:Hispanic:no",
+                   "AL:White:yes",
+                   "AL:White:no")
+targets <- list(rk_type,rk_state_race_job,rk_state_race_covid)
+names(targets) <- c("rk_type","rk_state_race_job","rk_state_race_covid")
+```
+
+```{r}
+# Rename so variable names match target names
+rake_df <- rake_df %>%
+  rename(rk_type = type) %>%
+  mutate(rk_state_race_job = interaction(state,race,job, sep = ":")) %>%
+  mutate(rk_state_race_covid = interaction(state,race,covid, sep = ":")) %>%
+  mutate(caseid = row_number())
+rake_df <- as.data.frame(rake_df)
+rake_df$rk_type <- as.factor(rake_df$rk_type)
+```
+
+```{r}
+kbl(rake_df %>% select(-state,-race,-job,-covid, -caseid), align = "c",booktabs = T,"latex") %>%
+  kable_classic(full_width = F) %>%
+  kable_styling(latex_options = "hold_position") %>%
+  collapse_rows(columns = 1:2, valign = "middle")
+```
+
+```{r, warning=FALSE, message=FALSE, comment=FALSE, echo=FALSE, results=FALSE}
+outsave <- rakelist(targets, rake_df,caseid = rake_df$caseid,weightvec = rake_df$weight, cap = 999999,verbose = FALSE, maxit = 1000, convcrit = 0.01)
+```
+
+```{r}
+method2 <- rake_df
+# Weights sum to original number of rows, but we want them to sum to our known totals:
+method2$weight_rake <- outsave$weightvec/sum(outsave$weightvec) * sum(rk_type)
+method2 <- method2 %>%
+  select(-caseid) %>%
+  rename(count = weight,
+         total = weight_rake) %>%
+  mutate(weight = total/count) %>%
+  select(state,race,job,rk_type,total) %>%
+  spread(rk_type,total)
+col_order <- c("state","race","job","home_covid", "work_covid", "leisure_covid","no_covid")
+method2 <- method2[, col_order]
+```
+
+We obtain the same results as above:
+
+```{r}
+kbl(method2, align = "c",booktabs = T,"latex") %>%
+  kable_classic(full_width = F) %>%
+  kable_styling(latex_options = "HOLD_position") %>%
+  collapse_rows(columns = 1:2, valign = "middle")
+```
+
+Finally, to confirm we obtain the same results with a full survey view where each respondent has a weight of 1. E.g.,:
+
+```{r}
+rake_df <- ev %>%
+  gather(rk_type,weight,-state,-race,-job) %>%
+  uncount(weight) %>%
+  mutate(weight = 1,
+         covid = ifelse(rk_type == "no_covid","no","yes"),
+         rk_state_race_job = interaction(state,race,job, sep = ":"),
+         rk_state_race_covid = interaction(state,race,covid, sep = ":"),
+         rk_type = as.factor(rk_type),
+         caseid = row_number())
+rake_df <- as.data.frame(rake_df)
+sample <- rake_df[1:5,]
+```
+
+```{r}
+kbl(sample %>% select(-state,-race,-job,-covid, -caseid), align = "c",booktabs = T,"latex") %>%
+  kable_classic(full_width = F) %>%
+  kable_styling(latex_options = "hold_position") %>%
+  collapse_rows(columns = 1:2, valign = "middle")
+```
+
+```{r, results=FALSE}
+outsave <- rakelist(targets,rake_df,caseid = rake_df$caseid)
+method3 <- rake_df
+method3$weight_rake <- outsave$weightvec
+method3$weight_rake <- (method3$weight_rake/sum(method3$weight_rake)) * sum(rk_type)
+```
+
+Now, our new weights are at the individual level:
+```{r}
+sample <- method3[1:5,]
+kbl(sample %>% select(-state,-race,-job,-covid, -caseid), align = "c",booktabs = T,"latex") %>%
+  kable_classic(full_width = F) %>%
+  kable_styling(latex_options = "hold_position") %>%
+  collapse_rows(columns = 1:2, valign = "middle")
+```
+
+Grouping the data and summing the weights, we confirm it is the same result:
+
+```{r}
+method3 <- method3 %>% 
+  group_by(state,race,job,rk_type) %>%
+  summarise(total = sum(weight_rake)) %>%
+  spread(rk_type,total)
+col_order <- c("state","race","job","home_covid", "work_covid", "leisure_covid","no_covid")
+method3 <- method3[, col_order]
+kbl(method3, align = "c",booktabs = T,"latex") %>%
+  kable_classic(full_width = F) %>%
+  kable_styling(latex_options = "HOLD_position") %>%
+  collapse_rows(columns = 1:2, valign = "middle")
+```

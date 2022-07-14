@@ -1,0 +1,77 @@
+﻿setting,education,job
+"Agriculture, forestry, etc",bachelor's degree or higher,"Agriculture, forestry, etc with bachelor's degree or higher"
+"Agriculture, forestry, etc",high school graduate or GED,"Agriculture, forestry, etc with high school graduate or GED"
+"Agriculture, forestry, etc",less than high school graduate,"Agriculture, forestry, etc with less than high school graduate"
+"Agriculture, forestry, etc",some college or associate's degree,"Agriculture, forestry, etc with some college or associate's degree"
+Correctional facility,bachelor's degree or higher,Correctional facility with bachelor's degree or higher
+Correctional facility,high school graduate or GED,"Correctional facility with high school graduate, GED, or less"
+Correctional facility,less than high school graduate,"Correctional facility with high school graduate, GED, or less"
+Correctional facility,some college or associate's degree,Correctional facility with some college or associate's degree
+First response,bachelor's degree or higher,First response with bachelor's degree or higher
+First response,high school graduate or GED,First response with high school graduate or GED
+First response,less than high school graduate,First response with less than high school graduate
+First response,some college or associate's degree,First response with some college or associate's degree
+Food and beverage store,bachelor's degree or higher,Food and beverage store with bachelor's degree or higher
+Food and beverage store,high school graduate or GED,Food and beverage store with high school graduate or GED
+Food and beverage store,less than high school graduate,Food and beverage store with less than high school graduate
+Food and beverage store,some college or associate's degree,Food and beverage store with some college or associate's degree
+Food manufacturing,bachelor's degree or higher,Food manufacturing with bachelor's degree or higher
+Food manufacturing,high school graduate or GED,Food manufacturing with high school graduate or GED
+Food manufacturing,less than high school graduate,Food manufacturing with less than high school graduate
+Food manufacturing,some college or associate's degree,Food manufacturing with some college or associate's degree
+Healthcare,bachelor's degree or higher,Healthcare or death care with bachelor's degree or higher
+Healthcare,high school graduate or GED,Healthcare or death care with high school graduate or GED
+Healthcare,less than high school graduate,Healthcare or death care with less than high school graduate
+Healthcare,some college or associate's degree,Healthcare or death care with some college or associate's degree
+Death care,bachelor's degree or higher,Healthcare or death care with bachelor's degree or higher
+Death care,high school graduate or GED,Healthcare or death care with high school graduate or GED
+Death care,less than high school graduate,Healthcare or death care with less than high school graduate
+Death care,some college or associate's degree,Healthcare or death care with some college or associate's degree
+K-12 school,bachelor's degree or higher,K-12 school with bachelor's degree or higher
+K-12 school,high school graduate or GED,K-12 school with high school graduate or GED
+K-12 school,less than high school graduate,K-12 school with less than high school graduate
+K-12 school,some college or associate's degree,K-12 school with some college or associate's degree
+Social service,bachelor's degree or higher,Social service with bachelor's degree or higher
+Social service,high school graduate or GED,Social service with high school graduate or GED
+Social service,less than high school graduate,Social service with less than high school graduate
+Social service,some college or associate's degree,Social service with some college or associate's degree
+Non-food manufacturing,bachelor's degree or higher,Non-food manufacturing with bachelor's degree or higher
+Non-food manufacturing,high school graduate or GED,Non-food manufacturing with high school graduate or GED
+Non-food manufacturing,less than high school graduate,Non-food manufacturing with less than high school graduate
+Non-food manufacturing,some college or associate's degree,Non-food manufacturing with some college or associate's degree
+None of the above,bachelor's degree or higher,None of the above with bachelor's degree or higher
+None of the above,high school graduate or GED,None of the above with high school graduate or GED
+None of the above,less than high school graduate,None of the above with less than high school graduate
+None of the above,some college or associate's degree,None of the above with some college or associate's degree
+Other essential job,bachelor's degree or higher,Other essential job with bachelor's degree or higher
+Other essential job,high school graduate or GED,Other essential job with high school graduate or GED
+Other essential job,less than high school graduate,Other essential job with less than high school graduate
+Other essential job,some college or associate's degree,Other essential job with some college or associate's degree
+Other schools,bachelor's degree or higher,Other schools with bachelor's degree or higher
+Other schools,high school graduate or GED,Other schools with high school graduate or GED
+Other schools,less than high school graduate,Other schools with less than high school graduate
+Other schools,some college or associate's degree,Other schools with some college or associate's degree
+Preschool or daycare,bachelor's degree or higher,Preschool or daycare with bachelor's degree or higher
+Preschool or daycare,high school graduate or GED,Preschool or daycare with high school graduate or GED
+Preschool or daycare,less than high school graduate,Preschool or daycare with less than high school graduate
+Preschool or daycare,some college or associate's degree,Preschool or daycare with some college or associate's degree
+Public transit,bachelor's degree or higher,Public transit with bachelor's degree or higher
+Public transit,high school graduate or GED,"Public transit with high school graduate, GED, or less"
+Public transit,less than high school graduate,"Public transit with high school graduate, GED, or less"
+Public transit,some college or associate's degree,Public transit with some college or associate's degree
+USPS,bachelor's degree or higher,USPS with bachelor's degree or higher
+USPS,high school graduate or GED,"USPS with high school graduate, GED, or less"
+USPS,less than high school graduate,"USPS with high school graduate, GED, or less"
+USPS,some college or associate's degree,USPS with some college or associate's degree
+Unemployed,bachelor's degree or higher,Unemployed
+Unemployed,high school graduate or GED,Unemployed
+Unemployed,less than high school graduate,Unemployed
+Unemployed,some college or associate's degree,Unemployed
+NILF,bachelor's degree or higher,NILF
+NILF,high school graduate or GED,NILF
+NILF,less than high school graduate,NILF
+NILF,some college or associate's degree,NILF
+Working from home,bachelor's degree or higher,Working from home
+Working from home,high school graduate or GED,Working from home
+Working from home,less than high school graduate,Working from home
+Working from home,some college or associate's degree,Working from home

@@ -1,0 +1,142 @@
+﻿phase,type,oldvar,newvar
+3.1,education,1,less than high school graduate
+3.1,education,2,less than high school graduate
+3.1,education,3,high school graduate or GED
+3.1,education,4,some college or associate's degree
+3.1,education,5,some college or associate's degree
+3.1,education,6,bachelor's degree or higher
+3.1,education,7,bachelor's degree or higher
+3.1,setting,1,healthcare
+3.1,setting,2,social service
+3.1,setting,3,preschool or daycare
+3.1,setting,4,k-12 school
+3.1,setting,5,other schools
+3.1,setting,6,first response
+3.1,setting,7,death care
+3.1,setting,8,correctional facility
+3.1,setting,9,food and beverage store
+3.1,setting,10,"agriculture, forestry, etc"
+3.1,setting,11,food manufacturing
+3.1,setting,12,non-food manufacturing
+3.1,setting,13,public transit
+3.1,setting,14,usps
+3.1,setting,15,other essential job
+3.1,setting,16,none of the above
+3.1,setting,20,working from home
+3.1,setting,21,unemployed
+3.1,setting,22,nilf
+3.1,gender,1,male
+3.1,gender,2,female
+3.1,race_ethnicity,1,white
+3.1,race_ethnicity,2,black
+3.1,race_ethnicity,3,asian
+3.1,race_ethnicity,4,other
+3.1,race_ethnicity,5,hispanic
+3.2,education,1,less than high school graduate
+3.2,education,2,less than high school graduate
+3.2,education,3,high school graduate or GED
+3.2,education,4,some college or associate's degree
+3.2,education,5,some college or associate's degree
+3.2,education,6,bachelor's degree or higher
+3.2,education,7,bachelor's degree or higher
+3.2,setting,1,healthcare
+3.2,setting,2,healthcare
+3.2,setting,3,healthcare
+3.2,setting,4,healthcare
+3.2,setting,5,social service
+3.2,setting,6,preschool or daycare
+3.2,setting,7,k-12 school
+3.2,setting,8,other schools
+3.2,setting,9,first response
+3.2,setting,10,death care
+3.2,setting,11,correctional facility
+3.2,setting,12,food and beverage store
+3.2,setting,13,"agriculture, forestry, etc"
+3.2,setting,14,food manufacturing
+3.2,setting,15,non-food manufacturing
+3.2,setting,16,public transit
+3.2,setting,17,usps
+3.2,setting,18,other essential job
+3.2,setting,19,none of the above
+3.2,setting,20,working from home
+3.2,setting,21,unemployed
+3.2,setting,22,nilf
+3.2,gender,1,male
+3.2,gender,2,female
+3.2,race_ethnicity,1,white
+3.2,race_ethnicity,2,black
+3.2,race_ethnicity,3,asian
+3.2,race_ethnicity,4,other
+3.2,race_ethnicity,5,hispanic
+3.3,education,1,less than high school graduate
+3.3,education,2,less than high school graduate
+3.3,education,3,high school graduate or GED
+3.3,education,4,some college or associate's degree
+3.3,education,5,some college or associate's degree
+3.3,education,6,bachelor's degree or higher
+3.3,education,7,bachelor's degree or higher
+3.3,setting,1,healthcare
+3.3,setting,2,healthcare
+3.3,setting,3,healthcare
+3.3,setting,4,healthcare
+3.3,setting,5,social service
+3.3,setting,6,preschool or daycare
+3.3,setting,7,k-12 school
+3.3,setting,8,other schools
+3.3,setting,9,first response
+3.3,setting,10,death care
+3.3,setting,11,correctional facility
+3.3,setting,12,food and beverage store
+3.3,setting,13,"agriculture, forestry, etc"
+3.3,setting,14,food manufacturing
+3.3,setting,15,non-food manufacturing
+3.3,setting,16,public transit
+3.3,setting,17,usps
+3.3,setting,18,other essential job
+3.3,setting,19,none of the above
+3.3,setting,20,working from home
+3.3,setting,21,unemployed
+3.3,setting,22,nilf
+3.3,gender,1,male
+3.3,gender,2,female
+3.3,race_ethnicity,1,white
+3.3,race_ethnicity,2,black
+3.3,race_ethnicity,3,asian
+3.3,race_ethnicity,4,other
+3.3,race_ethnicity,5,hispanic
+3.4,education,1,less than high school graduate
+3.4,education,2,less than high school graduate
+3.4,education,3,high school graduate or GED
+3.4,education,4,some college or associate's degree
+3.4,education,5,some college or associate's degree
+3.4,education,6,bachelor's degree or higher
+3.4,education,7,bachelor's degree or higher
+3.4,setting,1,healthcare
+3.4,setting,2,healthcare
+3.4,setting,3,healthcare
+3.4,setting,4,healthcare
+3.4,setting,5,social service
+3.4,setting,6,preschool or daycare
+3.4,setting,7,k-12 school
+3.4,setting,8,other schools
+3.4,setting,9,first response
+3.4,setting,10,death care
+3.4,setting,11,correctional facility
+3.4,setting,12,food and beverage store
+3.4,setting,13,"agriculture, forestry, etc"
+3.4,setting,14,food manufacturing
+3.4,setting,15,non-food manufacturing
+3.4,setting,16,public transit
+3.4,setting,17,usps
+3.4,setting,18,other essential job
+3.4,setting,19,none of the above
+3.4,setting,20,working from home
+3.4,setting,21,unemployed
+3.4,setting,22,nilf
+3.4,gender,1,male
+3.4,gender,2,female
+3.4,race_ethnicity,1,white
+3.4,race_ethnicity,2,black
+3.4,race_ethnicity,3,asian
+3.4,race_ethnicity,4,other
+3.4,race_ethnicity,5,hispanic
