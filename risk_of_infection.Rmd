@@ -34,7 +34,7 @@ library(stringr)
 library(missForest)
 ```
 
-### Survey data overview
+## 1. Data overview
 
 **Job risk model**
 
@@ -88,7 +88,7 @@ Because of the highly contagious nature of the variant, we worried readers might
 We resolve this apples-to-apples issue by converting the risk of a covid infection to the risk of a mild to moderate infection or a covid hospitalization. We also calculate the risk for the infection to result in a case of long covid. For each type of infection severity, we can give an estimate for the number of days away from work resulting from it by using data on the average recovery time for each type. Finally, we use BLS data collected prior to the pandemic that records the total number of injuries recorded in each industry and the respective recovery times. The bottomline: if a covid infection contracted on the job took 15 days to recover from, we argue the severity of the infection is comparable to a workplace injury that resulted in the worker taking 15 days away from the job.
 
 
-### Clean Pulse data
+## 2. Process Pulse data
 
 **Creating job categories**
 
@@ -190,7 +190,7 @@ recode <- function(df,x,curr_phase){
   df <- merge(df,recode_vars %>%
           filter(type == x & phase == curr_phase) %>%
           select(-phase) %>%
-          dplyr::rename({{x}} := oldvar))
+          dplyr::rename({{x}} := oldvar),all.x = TRUE)
   return(df)
 }
 ```
@@ -198,7 +198,7 @@ recode <- function(df,x,curr_phase){
 Clean up data steps:
 
 * Removed respondents born after 2003
-* Removed respondents missing responses necessary for categorization
+* Removed respondents missing responses necessary for categorization (vaccine status, whether they work outside the home, reason for not working)
 * Categorizing remote workers, nilf, and unemployed
 * Recoding variables from numbers to text
 
@@ -256,13 +256,27 @@ phase3.3 <- process(3.3)
 phase3.4 <- process(3.4)
 ```
 
+
 Exporting processed files:
 
 ```{r}
-write.csv(phase3.1,"data_files/pulse/processed/phase3.1.csv")
-write.csv(phase3.2,"data_files/pulse/processed/phase3.2.csv")
-write.csv(phase3.3,"data_files/pulse/processed/phase3.3.csv")
-write.csv(phase3.4,"data_files/pulse/processed/phase3.4.csv")
+write.csv(phase3.1,"data_files/pulse/processed/phase3.1.csv",na="Missing")
+write.csv(phase3.2,"data_files/pulse/processed/phase3.2.csv",na="Missing")
+write.csv(phase3.3,"data_files/pulse/processed/phase3.3.csv",na="Missing")
+write.csv(phase3.4,"data_files/pulse/processed/phase3.4.csv",na="Missing")
+```
+
+Merge all phases and export:
+
+```{r}
+pulse <- rbind(phase3.1,
+               phase3.2,
+               phase3.3,
+               phase3.4)
+```
+
+```{r}
+write.csv(pulse,"data_files/pulse/processed/full_pulse")
 ```
 
 
@@ -334,16 +348,16 @@ pulse_grouped <- read_csv("data_files/pulse/processed/all_phases.csv")
 ```
 
 
-### Risk-of-infection model
+## 3. Relative Risk
+### 3.1. Relative risk: Esimate hours in each setting
 
 Having categorized Pulse respondents into their respective work categories, we now want to create a model to estimate the relative covid risk for different workers. Because we are ultimately interested in understanding risk specific to the workplace, we want to distribute infections between those occurring at work, leisure, or at home. To do this, we take the following steps:
 
-#### Estimate hours in each setting
 Under the assumption that spending more time in a certain setting increases ones probability of contracting covid in it, we first go about estimating the number of hours a respondent spends at home, leisure, and the workplace. To do this, we use pooled state-level ATUS data and determine the average number of hours respondents in each work status (NILF, unemployed, employed remote, employed in-person) spend in the three settings.
 
 The first step is to prepare the ATUS data, categorizing respondents into the work statuses of interest.
 
-Processing ATUS data:
+#### 3.1.1. Processing ATUS data:
 
 * Respondent file contains information on labor status obtained from CPS. We use this to categorize as we do CPS data.
     + emp_status: 1 = Employed, at work. 2 = Employed, absent. 3 = Unemployed, on layoff. 4 = Unemployed, looking. 5 = Not in labor force.
@@ -446,7 +460,7 @@ atusact <- atusact %>%
   merge(.,atusresp,by=c("caseid","year"))
 ```
 
-**Categorizing in-person and remote workers**
+#### 3.1.2. Categorizing in-person and remote workers
 
 Currently, we categorize workers based on their industry and occupation, but do not specify whether they are remote or in-person. The CPS added a question on whether the respondent did any teleworking:
 
@@ -476,14 +490,6 @@ An issue with this strategy is that some respondents did no work on the day they
 Finally, due to the non-response rate to the teleworking question on the CPS, as a last resort, we use the Dingel and Neiman categorizations to know if the respondent's job is teleworkable or not.
 
 ```{r}
-temp <- atusact
-```
-
-```{r}
-atusact <- temp
-```
-
-```{r}
 cats <- atusact %>%
   filter(tier1code == 5 & tier2code == 1 & tier3code == 1) %>%
   dplyr::mutate(top_location = ifelse(location == 2,"Workplace","Other")) %>%
@@ -505,6 +511,16 @@ atusact <- atusact %>%
     teleworkable == 1 ~ "Remote"
   ))
 ```
+
+Export processed ATUS file:
+
+```{r}
+write.csv(atusact,"data_files/cleanvariables/atus/atus_full.csv")
+```
+
+
+
+#### 3.1.3. Assess crosswalk
 
 To assess our crosswalk, we can compare the estimated population of remote workers from the Pulse and the ATUS. 
 
@@ -590,6 +606,8 @@ Calculating the correlation between the estimates:
 cor(wfh_est[wfh_est$type == "ATUS",]$percent,wfh_est[wfh_est$type == "Pulse",]$percent)
 ```
 
+#### 3.1.4. Calculate time in each setting
+
 Having obtained a crosswalk between the ATUS and work categories of interest, we can now estimate the percent of time each group spent at home, at work, and outside the home and workplace ("leisure"). Before this calculation, a question I want to run by you: 
 
 In the Pulse and ATUS, a respondent who does any in-person work will be categorized as "in-person" even if they spend time working at home. This means many of our "in-person" workers will really be *hybrid* workers who do some of their work at home or in "remote workplaces" (eg. coffeeshop). Similarly, in-person workers will spend some work hours outside the home (though not in the workplace). Because our infection proportions are based on settings (home, workplace, leisure (outside home and outside workplace)), we will calculate the average hours in each setting, but when we *divide* infections, we will have to consider time spent working in each setting. 
@@ -611,14 +629,16 @@ atusact <- atusact %>%
   )) %>%
   dplyr::mutate(date = as.yearmon(paste(year,month), "%Y %m")) 
 
-atusact %>%
+time_per_setting <- atusact %>%
   filter(date > "Mar 2020") %>%
   dplyr::group_by(top_location,top_category,caseid,weight) %>%
   dplyr::summarise(time = sum(duration)/60) %>%
   ungroup() %>%
   complete(nesting(caseid,weight,top_category),top_location,fill=list(time=0)) %>%
   group_by(top_location,top_category) %>%
-  dplyr::summarise(time = weighted.mean(time,weight)) %>%
+  dplyr::summarise(time = weighted.mean(time,weight)) 
+
+time_per_setting %>%
   filter(time > 0) %>%
   ggplot(aes(x=top_category,y=time,fill=top_location)) + 
   geom_col(position = position_stack(reverse = TRUE),size=0.3,width=0.5,color = "black") + 
@@ -628,6 +648,37 @@ atusact %>%
   theme(text = element_text(family = "Georgia",size=12)) +
   scale_fill_manual(name="Setting",values=wes_palette(n=3, name="FantasticFox1",type="continuous"))
 ```
+
+Exporting time-per-setting:
+
+```{r}
+write.csv(time_per_setting,"data_files/cleanvariables/atus/time_per_setting.csv")
+```
+
+Now, we can merge our Pulse data with information on time per setting:
+
+```{r}
+# Convert Pulse settings into 4 categories (in-person, nilf, remote, unemployed)
+pulse <- pulse %>%
+  mutate(top_category = case_when(
+    setting == "nilf" ~ "NILF",
+    setting == "unemployed" ~ "Unemployed",
+    setting == "working from home" ~ "Remote",
+    TRUE ~ "In-person"
+  ))
+
+# Spread time per setting data for easier merging
+time_per_setting <- time_per_setting %>%
+  mutate(top_location = paste0("Time_At_",top_location)) %>%
+  spread(top_location,time)
+
+# Merge data
+pulse <- pulse %>%
+  merge(.,time_per_setting,by="top_category")
+```
+
+
+#### 3.1.5. Sanity check time in each setting
 
 Because we are averaging time in each setting from across the pandemic period, we risk over or underestimating the number of infections occuring in a given setting. If, for example, the time spent during leisure increased significantly in the last two months we study, our leisure hour average will underestimate leisure time in those two months and result in an underestimate of infections. The upshot: for our procedure to be accurate, we would want the percent of time spent in each setting to remain consistent. With this in mind, we looked at ATUS data from April 2020 to December 2021 to look at time spent in each setting per month:
 
@@ -662,8 +713,8 @@ time_date %>%
   kable()
 ```
 
-#### Idenitifying risk-takers and risk-averse respondents
-
+### 3.2. Relative risk: Idenitifying risk-takers and risk-averse respondents
+#### 3.2.1. YouGov data overview
 Next, because the risk of an hour spent in a setting depends on whether respondents practice preventive behaviors, we obtain an estimate of whether the respondent is a risk-taker or is risk-averse. 
 
 While the Pulse does not contain data on respondents’ preventative behavior, it does contain questions on their beliefs about COVID-19 vaccines which have been shown to be correlated with preventive-behavior habits. For example, a KFF report finds that unvaccinated adults “are more likely to say they are not worried they personally will get seriously sick from the coronavirus” and were much less likely than vaccinated adults to report that the Delta variant made them more likely to wear a mask or avoid large gatherings. Thus, we create the following prediction model using relevant variables available in both the YouGov and Pulse surveys:
@@ -796,15 +847,14 @@ prep <- yougov %>%
                   frequency == "Sometimes" ~ 3,
                   frequency == "Rarely" ~ 2,
                   frequency == "Not at all" ~ 1)) %>%
-  mutate_at(c("risky_shop","risky_grocery","risky_transport"),
-            recode,
-            "1" = "Risky",
-            "0" = "Not risky",
-            "-1" = "Unknown") %>%
+  dplyr::mutate_at(c("risky_shop","risky_grocery","risky_transport"),
+                   recode,
+                   "1" = "Risky",
+                   "0" = "Not risky",
+                   "-1" = "Unknown") %>%
   mutate(combine = paste0("Shop:",risky_shop," + Grocery:",risky_grocery," + Transport:",risky_transport))
 ```
 
-\vspace{15pt}
 
 ```{r}
 prep %>%
@@ -818,17 +868,17 @@ prep %>%
 
 Looking at the data, my instinct would be to recategorize "Unknown" as risky for each setting. Then, I would categorize any respondents with two or more risky settings as risky overall (eg, choose based on majority). Doing this we obtain the following totals:
 
-\vspace{15pt}
 
 ```{r}
 yougov <- yougov %>% 
-  mutate_all(as.character) %>% 
-  mutate_at(c("risky_shop","risky_grocery","risky_transport"),
-            recode,
-            "-1" = "1") %>%
+  mutate_all(as.character) %>%
+  mutate(risky_shop = ifelse(risky_shop == "-1","1",risky_shop),
+         risky_grocery = ifelse(risky_grocery == "-1","1",risky_grocery),
+         risky_transport = ifelse(risky_transport == "-1","1",risky_transport)) %>%
   mutate(is_risky = ifelse(as.numeric(risky_shop) + as.numeric(risky_grocery) + as.numeric(risky_transport) >= 2,1,0))
 ```
 
+#### 3.2.2. Risky behavior sanity checks
 
 Now, looking at different behaviors by group:
 
@@ -866,8 +916,6 @@ yougov %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
   scale_fill_brewer("Riskiness",palette="Set2")
 ```
-
-\vspace{15pt}
 
 Collapsing to look at averages where "Always" = 5 and "Not at all" = 1
 
@@ -919,11 +967,9 @@ merge(nytimes,pops,by="COUNTYFP") %>%
   kable()
 ```
 
+#### 3.2.3. Risky behavior model
 
-Having categorized YouGov respondents as risk-averse or risk-takers, we can create a prediction model using variables also available in the Pulse:
-
-
-**vaccine status and beliefs**: We use a series of variables relating to whether a person is vaccinated or not, if they want to be vaccinated, and their general beliefs about the vaccine, and government/health authorities:
+Having categorized YouGov respondents as risk-averse or risk-takers, we can create a prediction model using variables also available in the Pulse relating to whether a person is vaccinated or not, if they want to be vaccinated, and their general beliefs about the vaccine, and government/health authorities:
 
 * isvax: Have you had the first or second doses of a Coronavirus (COVID-19) vaccine?
   + 0 = "No, neither"
@@ -932,8 +978,6 @@ Having categorized YouGov respondents as risk-averse or risk-takers, we can crea
 * wantsvax: If a Covid-19 vaccine were made available to me this week, I would definitely get it
   + 0 = 2, 3, 4, 5 (where 5 = strongly disagree)
   + 1 = 1 (where 1 = strongly agree)
-  
-We group these variables into a single one: **vacc_status
 
 * gov_skeptic: I believe government health authorities in my country will provide me with an effective COVID19 vaccine
   + 0 = 1, 2, 3 (where 1 = strongly agree)
@@ -969,16 +1013,70 @@ side_effects | I have concerns about side effects |  I am concerned about possib
 gen_vac_skeptic | I don't think a vaccine would be effective enough | I don't think vaccines are beneficial
 
 
+**Notes on relevant Pulse variables**
+
+All Pulse phases contain the following question:
+* **isvax:** Have you received a COVID-19 vaccine
+  + 1 = Yes
+  + 2 = No
+  
+If respondents say they've received the vaccine, they answer the follow-up question (variable = **all_doses**):
+
+* Phase 3.1: Did you receive (or do you plan to receive) all required doses
+  + 1 = Yes
+  + 2 = No
+  + -99 = Did not respond
+* Phase 3.2: Did you receive (or do you plan to receive) all required doses
+  + 1 = Yes, received all doses
+  + 2 = Yes, plan to receive all required doses
+  + 3 = No, don't plan to receive all required doses
+  + -99 = Did not respond
+* Phase 3.3 and 3.4: How many dose(s) of a COVID-19 vaccine have you received
+  + 1 = 1 vaccination
+  + 2 = 2 vaccinations
+  + 3 = 3 vaccinations
+  + 4 = 4 or more vaccinations
+  + 5 = Don’t know
+  + -99 = Did not respond
+
+If respondents *haven't* received the vaccine (isvax == No), all Pulse phases answer the follow-up question:
+* **wantsvax:** Once a  vaccine to prevent COVID-19 is available to you, would you…
+  + 1 = Definitely get a vaccine
+  + 2 = Probably get a vaccine
+  + 3 = Be unsure about getting a vaccine
+  + 4 = Probably NOT get a vaccine
+  + 5 = Definitely NOT get a vaccine
+  + -99 - Did not respond
+
+The questions we use to obtain our predictors (gov_skeptic, mistrust_vax, side_effects) are only asked if:
+
+* Phase 3.1 and 3.2: Person has not received all doses (i.e., isvax == No or all_doses == No) and they *did not* say they'd definitely get a vaccine (wantsvax != 1)
+* Phase 3.3 and 3.4: Person has not received the vaccine (isvax == No), regardless of doses, and they do not definitely want the vaccine (wantsvax != 1)
+
+In line with this, we set our relevant variables as follows:
+
+* isvax
+  + Phase 3.1 and 3.2: Yes if received or planned to received all required doses
+  + Phase 3.3 and 3.4: Yes if received a vaccine
+* wantsvax
+  + All phases: Yes if haven't received a vaccine but will definitely get a vaccine
+* mistrust_vax, gov_skeptic, side_effects: Can only be set to "Yes" if person hasn't received a vaccine and doesn't want to
+* other: Set to "Yes" if person doesn't want vaccine but for reasons outside of those in these variables
+
+We follow this same logic when setting YouGov variables:
+
+* wantsvax is only set to "Yes" if person "Strongly agrees" that they'd definitely get the vaccine
+* variables gov_skeptic, mistrust_vax, side_effects, and other are automatically set to "No" if person wants vaccine
+
+
+
 ```{r}
 yougov <- yougov %>% 
   filter(date > "2021-04-06") %>%
   dplyr::filter(isvax != " ") %>%
   dplyr::mutate(wantsvax = substr(wantsvax,1,1)) %>% 
-  dplyr::mutate(vacc_status = case_when(
-    isvax %in% c("Yes, one dose","Yes, two doses") ~ "is_vaccinated",
-    wantsvax %in% c("1","2","3") ~ "wants_vaccine",
-    TRUE ~ "not_want_vaccine"
-  )) %>%
+  dplyr::mutate(isvax = ifelse(isvax %in% c("Yes, one dose","Yes, two doses"),"Yes","No")) %>%
+  dplyr::mutate(wantsvax = ifelse(wantsvax %in% c(1,2) & isvax == "No","Yes","No")) %>%
   dplyr::mutate(gov_skeptic = substr(gov_skeptic,1,1)) %>% 
   dplyr::mutate(gov_skeptic = ifelse(gov_skeptic %in% c("4","5"),"Yes","No")) %>%
   dplyr::mutate(mistrust_vax = ifelse(mistrust_vax %in% c("A little","Not at all"),"Yes","No")) %>%
@@ -987,29 +1085,26 @@ yougov <- yougov %>%
 ```
 
 ```{r}
-yougov %>%
-  dplyr::filter(isvax != " ") %>%
-  dplyr::mutate_at(c("isvax"),
-                   recode,
-                   "No, neither" = "0",
-                   "Yes, one dose" = "1",
-                   "Yes, two doses" = "1") %>%  
-  group_by(date,isvax,side_effects) %>%
-  dplyr::summarise(count = n())
+yg <- yougov %>%
+  mutate(vax = case_when(
+    isvax == "Yes" ~ "IsVax",
+    wantsvax == "Yes" ~ "WantsVax",
+    TRUE ~ "NoVax"
+  )) %>%
+  mutate(have_info = ifelse(vax == "NoVax",0,1))
 ```
 
 
-### Running prediction models
 
-Should we do this with an ML classification algorithm? Idk the benefits, to research!
+#### 3.2.4. Running prediction models
 
 ```{r}
-risky_model<- glm(is_risky~
-                      vacc_status + 
-                      mistrust_vax + 
-                      gov_skeptic +
-                      side_effects,
-                    yougov,
+risky_model<- glm(is_risky ~
+                    vax +
+                    mistrust_vax + 
+                    gov_skeptic +
+                    side_effects,
+                    yg,
                     family = "binomial")
 summary(risky_model)
 ```
@@ -1017,26 +1112,207 @@ summary(risky_model)
 Now, we can apply the model to the Pulse data to make predictions. First, we recode Pulse data to match the model's input:
 
 ```{r}
-pulse_grouped <- pulse_grouped %>%
-  mutate(vacc_status = case_when(
-    isvax == 1 ~ "is_vaccinated",
-    wantsvax %in% c(1,2) ~ "wants_vaccine",
-    TRUE ~ "not_want_vaccine"),
-  gov_skeptic = ifelse(gov_skeptic == 1,"Yes","No"),
-  side_effects = ifelse(side_effects == 1,"Yes","No"),
-  mistrust_vax = ifelse(mistrust_vax == 1,"Yes","No"))
+pulse <- pulse %>%
+  mutate(alldoses = ifelse(isvax == "No","No",as.character(alldoses))) %>%
+  mutate(isvax = ifelse(isvax == "Yes" & alldoses != "No","Yes","No")) %>%
+  mutate(wantsvax = ifelse(wantsvax == "Yes","Yes","No")) %>%
+  mutate(gov_skeptic = ifelse(gov_skeptic == 1,"Yes","No")) %>%
+  mutate(side_effects = ifelse(side_effects == 1,"Yes","No")) %>%
+  mutate(mistrust_vax = ifelse(mistrust_vax == 1,"Yes","No"))
 ```
 
 ```{r}
-preds <- predict(risky_model,pulse_grouped,type="response")
-pulse_grouped$risky_pred <- preds
+pulse <- pulse %>%
+  mutate(vax = case_when(
+    isvax == "Yes" ~ "IsVax",
+    wantsvax == "Yes" ~ "WantsVax",
+    TRUE ~ "NoVax"
+  ))
+```
+
+Let's add age, state, education level
+
+```{r}
+preds <- predict(risky_model,pulse,type="response")
+pulse$risky_pred <- preds
+```
+
+For now, let's assume that anyone with more than a 25% of being risky is risky:
+
+```{r}
+pulse %>%
+  dplyr::group_by(vax,gov_skeptic,side_effects,mistrust_vax,risky_pred) %>%
+  dplyr::summarise(count=sum(weight)) %>%
+  arrange(-risky_pred) %>%
+  ungroup() %>%
+  mutate(percent_of_pop = count/sum(count)) %>%
+  select(-count)
 ```
 
 ```{r}
-pulse_grouped %>%
-  dplyr::group_by(vacc_status,gov_skeptic,side_effects,mistrust_vax,risky_pred) %>%
-  dplyr::summarise(n())
+pulse$is_risky <- ifelse(pulse$risky_pred > 0.25, 1, 0)
 ```
-
 
 We can use YouGov to estimate the proportion at each month? Or something like that. And then we can use that to set the threshold. 
+Add more gradiation on the 'wanting infection' variable (don't make binary)
+
+### 3.3. Risky behavior multiplier
+[Discussion about which model to use]
+Having estimated whether someone wears a mask in leisure settings, we want to know how much riskier not wearing a mask is while at leisure. We obtain this risk multiplier using this Nature study of 198,077 US participants which finds that self-reported ‘sometimes’, ‘most of the time’, and ‘always’ use of face mask was associated with an average 68% reduced risk of predicted COVID-19 compared to individuals who wore face masks none of the time. Findings are consistent with this CDC study that finds mask wearing reduced risk of infection by 70%. In line with the Nature study, we say that, for risk-takers, a hour spent at leisure is 3.125 (1/0.32) times riskier.
+
+### 3.4. Relative risk: People in household
+
+If someone lives alone we assign a risk multiplier of 0 because hours spent alone at home are not risky. We use the Pulse question, *How many total people (adults and children) currently live in your household, including youself?* to set the binary varibale, **lives_with_others**
+
+```{r}
+pulse$lives_with_others <- ifelse(pulse$num_household > 1,1,0)
+```
+
+
+### 3.5. Relative risk: Split Pulse data
+
+To recap: we are ultimately interested in understanding risk specific to the workplace, so we want to distribute infections between those occurring at work, leisure, or at home. If a Pulse respondent had covid and we believed they were equally likely to have gotten it in any of the settings, we would simply attribute 1/3 of the infection to each. Instead, we believe that the likelihood an infection occured in the setting is a function of how much time they spend there and how risky they are in the setting. We gathered three pieces of information:
+
+1. Time in each setting by work category (ATUS)
+2. Risky behavior during leisure hours (YouGov + Pulse)
+3. People in household (Pulse)
+
+We assume that if someone is risky, an hour spent at leisure is 3.125 times riskier. We also assume that if someone lives alone, there is 0 risk in their household setting. 
+
+To capture risk specific to each setting in our model, we create three subrespondents for every respondent: a “work respondent,” a “leisure respondent,” and a “home respondent”. Each subrespondent is given a weight of one-third. 
+
+We create an infection variable (I) with four categories:
+
+* no infection
+* infection at home
+* infection at work
+* infection at leisure
+
+For a respondent who reports to Pulse that they’ve not been infected, all three subrespondents fall into the “no infection” category in our infection variable (I). For a respondent who reports to Pulse that they have been infected, the work subrespondent will fall into the “infection at work” category, the leisure subrespondent will fall into the “infection at leisure” category, and the home subrespondent will fall into the “infection at home” category. Because we don’t want to distribute an infection equally across each setting, we take the following steps to subdivide the single infection into shares reflecting the likelihood that the infection occurs in each setting:
+
+1.	Assign number of hours in each setting 
+2.	Assign risk multiplier for each setting
+3.	Calculate the “proportion” of the infection occurring in a given setting by multipliying hours in the setting by the riskiness multiplier and dividing by total, risky-adjusted hours.
+4.	Multiply each proportion by 3 so weighted infections still sum to 1. 
+
+For example, for a Pulse respondent who is risky during leisure and lives alone: 
+
+Respondent | Weight | Time setting | Risky multiplier | No infection | Home covid | Work covid | Leisure covid
+-----------|--------|--------------|------------------|--------------|------------|------------|--------------
+HomeResp   | 1/3    | 12           | 0                | 0            | 0          | 0          | 0
+LeisureResp| 1/3    | 4            | 3.125            | 0            | 0          | 0          | 1.83
+WorkResp   | 1/3    | 8            | 1                | 0            | 0          | 1.17       | 0
+
+We create a measure of past covid contraction using the following Pulse survey question:
+
+* Has a doctor or other health care provider ever told you that you have COVID-19? 
+  + 1. Yes
+  + 2. No
+  + 3. Not sure
+
+"Yes" responses are marked as having had Covid-19 and given a 1, while "No" and "Not sure" are both marked as never having had Covid and given a 0.
+
+```{r}
+pulse <- pulse %>%
+  filter(had_covid > 0) %>%
+  dplyr::mutate(split_weight = 1/3,
+         id = row_number())
+split_pulse <- rbind(pulse %>% mutate(respondent = "HomeResp"),
+        pulse %>% mutate(respondent = "LeisureResp"),
+        pulse %>% mutate(respondent = "WorkResp"))
+```
+
+```{r}
+split_pulse <- split_pulse %>%
+  mutate(time_setting = case_when(
+    respondent == "HomeResp" ~ Time_At_Home,
+    respondent == "LeisureResp" ~ Time_At_Leisure,
+    respondent == "WorkResp" ~ Time_At_Workplace,
+    respondent == "WorkResp" ~ Time_At_Workplace,
+  ),
+  risky_multiplier = case_when(
+    respondent == "HomeResp" ~ lives_with_others,
+    respondent == "WorkResp" ~ 1,
+    respondent == "LeisureResp" & is_risky == 1 ~ 3.125,
+    respondent == "LeisureResp" & is_risky == 0 ~ 1
+  ),
+  had_covid = ifelse(had_covid == 1,1,0),
+  no_infection = abs(had_covid-1),
+  home_covid = ifelse(respondent == "HomeResp",
+                      had_covid * time_setting * risky_multiplier,0),
+  work_covid = ifelse(respondent == "WorkResp",
+                      had_covid * time_setting * risky_multiplier,0),
+  leisure_covid = ifelse(respondent == "LeisureResp",
+                         had_covid * time_setting * risky_multiplier,0)) %>%
+  dplyr::group_by(id) %>%
+  dplyr::mutate(total = sum(home_covid + work_covid + leisure_covid + no_infection)) %>%
+  dplyr::mutate(home_covid = home_covid/total * 3,
+                work_covid = work_covid/total * 3,
+                leisure_covid = leisure_covid/total * 3,
+                no_infection = no_infection/total * 3)
+```
+
+As a sanity check, we want to make sure we obtain the same number of covid infections and respodents without covid:
+
+```{r}
+pulse %>%
+  mutate(covid = ifelse(had_covid == 1,"covid","nocovid")) %>%
+  dplyr::group_by(covid) %>%
+  dplyr::summarise(count = n())
+```
+
+```{r}
+split_pulse %>%
+  mutate(covid = (home_covid + leisure_covid + work_covid)*split_weight,
+         nocovid = no_infection * split_weight) %>%
+  summarise(covid = sum(covid),
+            nocovid = sum(nocovid))
+```
+
+Now, looking at covid in each of the settings:
+
+```{r}
+split_pulse %>%
+  summarise(home = sum(home_covid * split_weight),
+            work = sum(work_covid * split_weight),
+            leisure = sum(leisure_covid * split_weight)) %>%
+  mutate(total=home+work+leisure)
+```
+
+Exporting Pulse data with split respondents:
+
+```{r}
+write.csv(split_pulse,"data_files/pulse/processed/split_pulse.csv")
+```
+
+
+### Relative risk: Compute relative risk model
+
+```{r}
+colnames(split_pulse)
+```
+```{r}
+df <- split_pulse %>%
+  select(race_ethnicity)
+```
+
+```{r}
+count(pulse$race_ethnicity)
+```
+
+
+```{r}
+df <- df %>% 
+  gather(Type,Infected,-Weight,-Job) %>%
+  mutate(Weight = Infected * Weight) %>%
+  select(-Infected) %>%
+  filter(Weight > 0)
+```
+
+### Relative to absolute risk: CDC total infections by race and state
+### Relative to absolute risk: Job population estimates by race and state
+### Relative to absolute risk: Total infections at home, leisure, and work
+### Risk-of-infection: IPF to fit relative risk to known totals
+### Risk-of-infection: Translate risk-of-infection to mild/moderate and severe infection
+
+

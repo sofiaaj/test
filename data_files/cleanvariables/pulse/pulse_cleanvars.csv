@@ -19,7 +19,7 @@
 3.1,WHYNOT10,gov_skeptic
 3.1,WHYNOT6,test_concerns
 3.1,WHYNOT9,mistrust_vax
-3.1,THHLD_NUMADLT,num_adult
+3.1,THHLD_NUMPER,num_household
 3.1,INCOME,income
 3.1,TW_YN,teleworked
 3.2,TBIRTH_YEAR,birth_year
@@ -42,7 +42,7 @@
 3.2,WHYNORV8,gov_skeptic
 3.2,WHYNORV5,test_concerns
 3.2,WHYNORV7,mistrust_vax
-3.2,THHLD_NUMADLT,num_adult
+3.2,THHLD_NUMPER,num_household
 3.2,INCOME,income
 3.2,ACTIVITY2,teleworked
 3.3,TBIRTH_YEAR,birth_year
@@ -65,7 +65,7 @@
 3.3,WHYNORV8,gov_skeptic
 3.3,WHYNORV5,test_concerns
 3.3,WHYNORV7,mistrust_vax
-3.3,THHLD_NUMADLT,num_adult
+3.3,THHLD_NUMPER,num_household
 3.3,INCOME,income
 3.3,ACTIVITY2,teleworked
 3.4,TBIRTH_YEAR,birth_year
@@ -88,7 +88,7 @@
 3.4,WHYNORV8,gov_skeptic
 3.4,WHYNORV5,test_concerns
 3.4,WHYNORV7,mistrust_vax
-3.4,THHLD_NUMADLT,num_adult
+3.4,THHLD_NUMPER,num_household
 3.4,INCOME,income
 3.4,ACTIVITY2,teleworked
 3.1,DOSES,alldoses

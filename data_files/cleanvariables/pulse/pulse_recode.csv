@@ -32,6 +32,43 @@
 3.1,race_ethnicity,3,asian
 3.1,race_ethnicity,4,other
 3.1,race_ethnicity,5,hispanic
+3.1,isvax,1,Yes
+3.1,isvax,2,No
+3.2,isvax,1,Yes
+3.2,isvax,2,No
+3.3,isvax,1,Yes
+3.3,isvax,2,No
+3.4,isvax,1,Yes
+3.4,isvax,2,No
+3.1,alldoses,1,Yes
+3.1,alldoses,2,No
+3.2,alldoses,1,Yes
+3.2,alldoses,2,Yes
+3.2,alldoses,3,No
+3.1,wantsvax,1,Yes
+3.1,wantsvax,2,No
+3.1,wantsvax,3,No
+3.1,wantsvax,4,No
+3.1,wantsvax,5,No
+3.1,wantsvax,-99,No
+3.2,wantsvax,1,Yes
+3.2,wantsvax,2,No
+3.2,wantsvax,3,No
+3.2,wantsvax,4,No
+3.2,wantsvax,5,No
+3.2,wantsvax,-99,No
+3.3,wantsvax,1,Yes
+3.3,wantsvax,2,No
+3.3,wantsvax,3,No
+3.3,wantsvax,4,No
+3.3,wantsvax,5,No
+3.3,wantsvax,-99,No
+3.4,wantsvax,1,Yes
+3.4,wantsvax,2,No
+3.4,wantsvax,3,No
+3.4,wantsvax,4,No
+3.4,wantsvax,5,No
+3.4,wantsvax,-99,No
 3.2,education,1,less than high school graduate
 3.2,education,2,less than high school graduate
 3.2,education,3,high school graduate or GED
