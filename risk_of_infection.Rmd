@@ -1,6 +1,9 @@
 ---
-title: "Risk outline - Reproducible Version"
+title: "Risk outline"
 output: pdf_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, echo=FALSE}
@@ -14,6 +17,7 @@ library(binsreg)
 library(readr)
 library(tidyr)
 library(plyr)
+library(nnet)
 library(zoo)
 library(ggplot2)
 library(xtable)
@@ -31,6 +35,7 @@ library(fastDummies)
 library(wesanderson)
 library(extrafont)
 library(stringr)
+library(covidcast)
 library(missForest)
 ```
 
@@ -38,19 +43,25 @@ library(missForest)
 
 **Job risk model**
 
-We use Pulse data from phase 3.1, 3.2, and 3.3. The data for these phases pertain to data collected across the following periods:
+We use Pulse data from phase 3.1, 3.2, and 3.3. The data for these
+phases pertain to data collected across the following periods:
 
-* Phase 3.1: April 14, 2021 – July 5, 2021
-*	Phase 3.2: July 21, 2021 – October 11, 2021
-*	Phase 3.3: December 1, 2021 – February 7, 2022
-* Phase 3.4: March 2, 2022 - May 9, 2022
+-   Phase 3.1: April 14, 2021 -- July 5, 2021
+-   Phase 3.2: July 21, 2021 -- October 11, 2021
+-   Phase 3.3: December 1, 2021 -- February 7, 2022
+-   Phase 3.4: March 2, 2022 - May 9, 2022
 
-Pulse surveys prior to phase 3.1 do not contain the question about the job setting of respondents that allows us to categorize employees.
+Pulse surveys prior to phase 3.1 do not contain the question about the
+job setting of respondents that allows us to categorize employees.
 
+**Omicron concerns + impetus for creating risk of infection by specific
+severity levels**
 
-**Omicron concerns + impetus for creating risk of infection by specific severity levels**
-
-The period starting from mid-Phase 3.3 and continuing for phase 3.4 contains data collected during a time of high prevalence of the Omicron variant. Using CDC data on variant proportions, we see that beginning with the week ending on December 27, 2021, the Omicron variant constituted over half of all COVID infections of the US.
+The period starting from mid-Phase 3.3 and continuing for phase 3.4
+contains data collected during a time of high prevalence of the Omicron
+variant. Using CDC data on variant proportions, we see that beginning
+with the week ending on December 27, 2021, the Omicron variant
+constituted over half of all COVID infections of the US.
 
 ```{r}
 read.csv("data_files/covid/covid_variant_proportions.csv") %>%
@@ -84,91 +95,138 @@ read.csv("data_files/covid/covid_variant_proportions.csv") %>%
 ggsave("figures/variant_proportions.png")
 ```
 
-Because of the highly contagious nature of the variant, we worried readers might think that merely getting infected isn't a big deal given the high share of adults infected at least once. We are also interested in measuring the absolute amount of noxiousness and how it compares to the pre-pandemic period, which means we need a risk measure that is comparable to the types of workplace risk that existed prior to the pandemic. It makes sense to think of an injury ending in death in the same way we think about a covid infection ending in death, but comparing a non-fatal injury such as a cut or laceration with a mild case of covid, or a bad fracture with a case of long covid, is less straightforward.
-We resolve this apples-to-apples issue by converting the risk of a covid infection to the risk of a mild to moderate infection or a covid hospitalization. We also calculate the risk for the infection to result in a case of long covid. For each type of infection severity, we can give an estimate for the number of days away from work resulting from it by using data on the average recovery time for each type. Finally, we use BLS data collected prior to the pandemic that records the total number of injuries recorded in each industry and the respective recovery times. The bottomline: if a covid infection contracted on the job took 15 days to recover from, we argue the severity of the infection is comparable to a workplace injury that resulted in the worker taking 15 days away from the job.
-
+Because of the highly contagious nature of the variant, we worried
+readers might think that merely getting infected isn't a big deal given
+the high share of adults infected at least once. We are also interested
+in measuring the absolute amount of noxiousness and how it compares to
+the pre-pandemic period, which means we need a risk measure that is
+comparable to the types of workplace risk that existed prior to the
+pandemic. It makes sense to think of an injury ending in death in the
+same way we think about a covid infection ending in death, but comparing
+a non-fatal injury such as a cut or laceration with a mild case of
+covid, or a bad fracture with a case of long covid, is less
+straightforward. We resolve this apples-to-apples issue by converting
+the risk of a covid infection to the risk of a mild to moderate
+infection or a covid hospitalization. We also calculate the risk for the
+infection to result in a case of long covid. For each type of infection
+severity, we can give an estimate for the number of days away from work
+resulting from it by using data on the average recovery time for each
+type. Finally, we use BLS data collected prior to the pandemic that
+records the total number of injuries recorded in each industry and the
+respective recovery times. The bottomline: if a covid infection
+contracted on the job took 15 days to recover from, we argue the
+severity of the infection is comparable to a workplace injury that
+resulted in the worker taking 15 days away from the job.
 
 ## 2. Process Pulse data
 
 **Creating job categories**
 
-We start by assigning a job category to each respondent. We create job categories by combining the type of work the respondent does and their education level. An important point: we only keep respondents who were 18 or older at the time of being surveyed.
+We start by assigning a job category to each respondent. We create job
+categories by combining the type of work the respondent does and their
+education level. An important point: we only keep respondents who were
+18 or older at the time of being surveyed.
 
-1. Work in the last 7 days
-    + Variable name: any_work
-    + Phase 3.1, 3.2, 3.3 and 3.4: "In the last 7 days, have you done any work for pay or profit?"
-
-2. Work outside the home
-    + Variable name: work_outside_home
-    + Phase 3.1: "Since January 1, 2021, have you worked or volunteered outside your home?"
-    + Phase 3.2, 3.3, and 3.4: "In the last 7 days, have you worked or volunteered outside your home?"
-
-3. Setting of work outside home
-    + Variable name: setting
-    + Phase 3.1: "Since January 1, 2021, which best describes the primary location/setting where you worked or volunteered outside your home?"
-    + Phase 3.2, 3.3, and 3.4: "In the last 7 days, which best describes the primary location/setting where you worked or volunteered outside your home?"
-
-4. Reason not work for pay or profit
-    + Variable name: reason_not_work
-    + Phase 3.1, 3.2, 3.3, and 3.4: "What is your main reason for not working for pay or profit?"
+1.  Work in the last 7 days
+    -   Variable name: any_work
+    -   Phase 3.1, 3.2, 3.3 and 3.4: "In the last 7 days, have you done
+        any work for pay or profit?"
+2.  Work outside the home
+    -   Variable name: work_outside_home
+    -   Phase 3.1: "Since January 1, 2021, have you worked or
+        volunteered outside your home?"
+    -   Phase 3.2, 3.3, and 3.4: "In the last 7 days, have you worked or
+        volunteered outside your home?"
+3.  Setting of work outside home
+    -   Variable name: setting
+    -   Phase 3.1: "Since January 1, 2021, which best describes the
+        primary location/setting where you worked or volunteered outside
+        your home?"
+    -   Phase 3.2, 3.3, and 3.4: "In the last 7 days, which best
+        describes the primary location/setting where you worked or
+        volunteered outside your home?"
+4.  Reason not work for pay or profit
+    -   Variable name: reason_not_work
+    -   Phase 3.1, 3.2, 3.3, and 3.4: "What is your main reason for not
+        working for pay or profit?"
 
 **Categorization**
 
-* In-person workers
-    + Has worked in the last 7 days (any_work = 1)
-    + Worked or volunteered outside the home (work_outside_home = 1)
+-   In-person workers
+    -   Has worked in the last 7 days (any_work = 1)
+    -   Worked or volunteered outside the home (work_outside_home = 1)
+-   Remote workers
+    -   Has worked in the last 7 days (any_work = 1)
+    -   Has not worked or volunteered outside the home
+        (work_outside_home = 2)
+-   Unemployed
+    -   Has not worked in the last 7 days (any_work = 2)
+    -   Main reason for not working for pay or profit:
+        -   Was concerned about getting or spreading the coronavirus
+            (reason_not_work = 5)
+        -   Was laid off or furloughed due to coronavirus pandemic
+            (reason_not_work = 8)
+        -   Employer closed temporarily due to coronavirus pandemic
+            (reason_not_work = 9)
+        -   Employer went out of business due to coronavirus pandemic
+            (reason_not_work = 10)
+        -   I do/did not have transportation to work (reason_not_work =
+            11)
+-   NILF
+    -   Has not worked in the last 7 days (any_work = 2)
+    -   Main reason for not working for pay or profit:
+        -   I did not want to be employed at this time (reason_not_work
+            = 1)
+        -   I am/was sick with coronavirus symptoms or caring for
+            someone who was sick with coronavirus symptoms
+            (reason_not_work = 2)
+        -   I am/was caring for children not in school or daycare
+            (reason_not_work = 3)
+        -   I am/was caring for an elderly person (reason_not_work = 4)
+        -   I am/was sick (not coronavirus related) or disabled
+            (reason_not_work = 6)
+        -   I am retired (reason_not_work = 7)
+        -   Other reason, please specify (reason_not_work = 12)
 
-* Remote workers
-    + Has worked in the last 7 days (any_work = 1)
-    + Has not worked or volunteered outside the home (work_outside_home = 2)
+**Education Levels** We create 4 education categories:
 
-* Unemployed
-    + Has not worked in the last 7 days (any_work = 2)
-    + Main reason for not working for pay or profit:
-        - Was concerned about getting or spreading the coronavirus (reason_not_work = 5)
-        - Was laid off or furloughed due to coronavirus pandemic (reason_not_work = 8)
-        - Employer closed temporarily due to coronavirus pandemic (reason_not_work = 9)
-        - Employer went out of business due to coronavirus pandemic (reason_not_work = 10)
-        - I do/did not have transportation to work (reason_not_work = 11)
-
-* NILF
-    + Has not worked in the last 7 days (any_work = 2)
-    + Main reason for not working for pay or profit:
-        - I did not want to be employed at this time (reason_not_work = 1)
-        - I am/was sick with coronavirus symptoms or caring for someone who was sick with coronavirus symptoms (reason_not_work = 2)
-        - I am/was caring for children not in school or daycare (reason_not_work = 3)
-        - I am/was caring for an elderly person (reason_not_work = 4)
-        - I am/was sick (not coronavirus related) or disabled (reason_not_work = 6)
-        - I am retired (reason_not_work = 7)
-        - Other reason, please specify (reason_not_work = 12)
-        
-**Education Levels**
-We create 4 education categories:
-
-1. Less than high school graduate
-2. High school graduate or GED
-3. Some college or associate's degree
-4. Bachelor's degree or higher
+1.  Less than high school graduate
+2.  High school graduate or GED
+3.  Some college or associate's degree
+4.  Bachelor's degree or higher
 
 **Combining education and setting data**
 
-For the categories, “Working from home”, “Unemployed”, and “NILF”, we collapse across all 4 education categories as the type of work and riskiness of it should not vary in these categories. Due to the relatively small size of some of these job categories, we also make the following changes to our job categories:
+For the categories, "Working from home", "Unemployed", and "NILF", we
+collapse across all 4 education categories as the type of work and
+riskiness of it should not vary in these categories. Due to the
+relatively small size of some of these job categories, we also make the
+following changes to our job categories:
 
-1.	Combine the “less than high school” and “high school” categories for “correctional facilities”.
-2.	Combine the 4 “health care” and 4 “death care” categories into 4 “health and death care” categories. 
-3.	Combine the “less than high school” and “high school” categories for public transit.
-4.	Combine the “less than high school” and “high school” categories for USPS.
+1.  Combine the "less than high school" and "high school" categories for
+    "correctional facilities".
+2.  Combine the 4 "health care" and 4 "death care" categories into 4
+    "health and death care" categories.
+3.  Combine the "less than high school" and "high school" categories for
+    public transit.
+4.  Combine the "less than high school" and "high school" categories for
+    USPS.
 
 We arrive at a final list of 60 job categories.
 
-![Job categories]("figures/job_categories.png")
+![Job categories](%22figures/job_categories.png%22)\
 
-Loading Pulse data, selecting relevant variables, renaming, and cleaning:
+Loading Pulse data, selecting relevant variables, renaming, and
+cleaning:
 
 ```{r,message=FALSE,warning=FALSE}
-clean_vars <- read.csv("data_files/cleanvariables/pulse/pulse_cleanvars.csv")
-recode_vars <- read.csv("data_files/cleanvariables/pulse/pulse_recode.csv")
-set_educ_to_job <- read.csv("data_files/cleanvariables/pulse/pulse_setting_education_to_job.csv") %>% mutate(setting = tolower(setting))
+clean_vars <- read.csv(
+  "data_files/cleanvariables/pulse/pulse_cleanvars.csv")
+recode_vars <- read.csv(
+  "data_files/cleanvariables/pulse/pulse_recode.csv")
+set_educ_to_job <- read.csv(
+  "data_files/cleanvariables/pulse/pulse_setting_education_to_job.csv") %>% 
+  mutate(setting = tolower(setting))
 ```
 
 ```{r}
@@ -184,7 +242,6 @@ open <- function(phase){
 }
 ```
 
-
 ```{r}
 recode <- function(df,x,curr_phase){
   df <- merge(df,recode_vars %>%
@@ -197,10 +254,12 @@ recode <- function(df,x,curr_phase){
 
 Clean up data steps:
 
-* Removed respondents born after 2003
-* Removed respondents missing responses necessary for categorization (vaccine status, whether they work outside the home, reason for not working)
-* Categorizing remote workers, nilf, and unemployed
-* Recoding variables from numbers to text
+-   Removed respondents born after 2003
+-   Removed respondents missing responses necessary for categorization
+    (vaccine status, whether they work outside the home, reason for not
+    working)
+-   Categorizing remote workers, nilf, and unemployed
+-   Recoding variables from numbers to text
 
 ```{r}
 clean <- function(df, phase){
@@ -229,7 +288,8 @@ clean <- function(df, phase){
 }
 ```
 
-Combining setting information with education level to create job categories. 
+Combining setting information with education level to create job
+categories.
 
 ```{r}
 make_job <- function(df){
@@ -256,7 +316,6 @@ phase3.3 <- process(3.3)
 phase3.4 <- process(3.4)
 ```
 
-
 Exporting processed files:
 
 ```{r}
@@ -275,17 +334,17 @@ pulse <- rbind(phase3.1,
                phase3.4)
 ```
 
-```{r}
-write.csv(pulse,"data_files/pulse/processed/full_pulse")
-```
-
 
 #### Sanity checking telework
 
-Doing a sanity check the latter phases, "In the last 7 days, have you or your household done any of the following… Teleworked or worked from home?" we find that 34% of our "WFH" employees said they didn't work from home.
+Doing a sanity check the latter phases, "In the last 7 days, have you or
+your household done any of the following... Teleworked or worked from
+home?" we find that 34% of our "WFH" employees said they didn't work
+from home.
 
-To handle these “inconsistent” responses, we treat it as missing impute these settings by using a respondent’s age, education level, household income, etc. to predict the missing setting.
-
+To handle these "inconsistent" responses, we treat it as missing impute
+these settings by using a respondent's age, education level, household
+income, etc. to predict the missing setting.
 
 ```{r}
 temp_merge <- rbind(phase3.2,phase3.3,phase3.4)
@@ -313,7 +372,6 @@ temp_merge %>%
                             size=9))
 ```
 
-
 ```{r}
 ggsave("figures/inconsisent_responses.png")
 ```
@@ -329,40 +387,54 @@ temp_merge <- temp_merge %>%
 
 ```{r}
 pulse_grouped <- temp_merge %>%
-  mutate_if(is.character, as.factor)
+  mutate_if(is.character, as.factor) %>%
+  rbind(.,phase3.1)
 ```
+
 
 ```{r}
 write.csv(pulse_grouped,"data_files/pulse/processed/all_phases.csv")
 ```
 
-Using missForest (random forest algorithm implementation) to impute missing values:
+Using missForest (random forest algorithm implementation) to impute
+missing values. (Note: this takes hours to run so I just have the task running on the Stanford clusuters and will update once it finishes)
 
 ```{r}
 #imputed <- missForest(pulse_grouped %>% select(-job))
-imputed <- na.omit(pulse_grouped)
-```
-
-```{r}
-pulse_grouped <- read_csv("data_files/pulse/processed/all_phases.csv")
 ```
 
 
 ## 3. Relative Risk
-### 3.1. Relative risk: Esimate hours in each setting
 
-Having categorized Pulse respondents into their respective work categories, we now want to create a model to estimate the relative covid risk for different workers. Because we are ultimately interested in understanding risk specific to the workplace, we want to distribute infections between those occurring at work, leisure, or at home. To do this, we take the following steps:
+### 3.1. Estimate hours in each setting
 
-Under the assumption that spending more time in a certain setting increases ones probability of contracting covid in it, we first go about estimating the number of hours a respondent spends at home, leisure, and the workplace. To do this, we use pooled state-level ATUS data and determine the average number of hours respondents in each work status (NILF, unemployed, employed remote, employed in-person) spend in the three settings.
+Having categorized Pulse respondents into their respective work
+categories, we now want to create a model to estimate the relative covid
+risk for different workers. Because we are ultimately interested in
+understanding risk specific to the workplace, we want to distribute
+infections between those occurring at work, leisure, or at home. To do
+this, we take the following steps:
 
-The first step is to prepare the ATUS data, categorizing respondents into the work statuses of interest.
+Under the assumption that spending more time in a certain setting
+increases ones probability of contracting covid in it, we first go about
+estimating the number of hours a respondent spends at home, leisure, and
+the workplace. To do this, we use pooled state-level ATUS data and
+determine the average number of hours respondents in each work status
+(NILF, unemployed, employed remote, employed in-person) spend in the
+three settings.
+
+The first step is to prepare the ATUS data, categorizing respondents
+into the work statuses of interest.
 
 #### 3.1.1. Processing ATUS data:
 
-* Respondent file contains information on labor status obtained from CPS. We use this to categorize as we do CPS data.
-    + emp_status: 1 = Employed, at work. 2 = Employed, absent. 3 = Unemployed, on layoff. 4 = Unemployed, looking. 5 = Not in labor force.
-    + industry: census industry codes
-    + occupation: census occupation codes
+-   Respondent file contains information on labor status obtained from
+    CPS. We use this to categorize as we do CPS data.
+    -   emp_status: 1 = Employed, at work. 2 = Employed, absent. 3 =
+        Unemployed, on layoff. 4 = Unemployed, looking. 5 = Not in labor
+        force.
+    -   industry: census industry codes
+    -   occupation: census occupation codes
 
 ```{r}
 clean_vars <- read.csv("data_files/cleanvariables/atus/atus_cleanvars.csv")
@@ -388,7 +460,12 @@ atusresp <- rbind(open("2020","resp"),
                   open("2021","resp"))
 ```
 
-We obtain job categories for all ATUS respondents using our CPS crosswalk which matches Census industries and occupations to one of our Pulse settings. As we do in the ATUS, we only categorize a respondent as employed if they've done work for pay or profit in the last 7 days. Workers who aren't employed are categorized as NILF if their reason for not working is that they are retired, disabled, or unable to work.
+We obtain job categories for all ATUS respondents using our CPS
+crosswalk which matches Census industries and occupations to one of our
+Pulse settings. As we do in the ATUS, we only categorize a respondent as
+employed if they've done work for pay or profit in the last 7 days.
+Workers who aren't employed are categorized as NILF if their reason for
+not working is that they are retired, disabled, or unable to work.
 
 ```{r}
 atusresp <- atusresp %>% 
@@ -403,7 +480,8 @@ atusresp <- atusresp %>%
                           ifelse(any_work %in% c(3,4,5),"NILF",setting)))
 ```
 
-Now we get atus-cps file which contains information on the state and education level of respondents. 
+Now we get atus-cps file which contains information on the state and
+education level of respondents.
 
 ```{r}
 #Convert fips codes into state names
@@ -442,7 +520,10 @@ atusresp <- merge(atusresp %>% mutate(caseid = as.character(caseid)),
                   by=c("caseid","year"))
 ```
 
-Finally, we can merge with activity data to get time distribution across settings. ATUS activity file includes activity-level information collected in ATUS, including activity code, location, duration, activity start and stop times. 
+Finally, we can merge with activity data to get time distribution across
+settings. ATUS activity file includes activity-level information
+collected in ATUS, including activity code, location, duration, activity
+start and stop times.
 
 ```{r}
 #Note, two different variables available for the cumulative duration of an activity. In the one we use, the last activity is truncated at 4 am.
@@ -450,7 +531,11 @@ atusact <- rbind(open("2020","act"),
                  open("2021","act"))
 ```
 
-Location is not collected for activities with activity codes of 0101xx (sleeping), 0102xx (grooming), 0104xx (personal activites), 500105 (none of your business), or 500106 (gap can't remember). We assume sleeping, grooming, and personal activities occured in the household. Finally, we remove location code 89, "Unspecified place".
+Location is not collected for activities with activity codes of 0101xx
+(sleeping), 0102xx (grooming), 0104xx (personal activites), 500105 (none
+of your business), or 500106 (gap can't remember). We assume sleeping,
+grooming, and personal activities occured in the household. Finally, we
+remove location code 89, "Unspecified place".
 
 ```{r}
 atusact <- atusact %>%
@@ -462,32 +547,63 @@ atusact <- atusact %>%
 
 #### 3.1.2. Categorizing in-person and remote workers
 
-Currently, we categorize workers based on their industry and occupation, but do not specify whether they are remote or in-person. The CPS added a question on whether the respondent did any teleworking:
+Currently, we categorize workers based on their industry and occupation,
+but do not specify whether they are remote or in-person. The CPS added a
+question on whether the respondent did any teleworking:
 
-*"At any time in the LAST 4 WEEKS, did (you/name) telework or work at home for pay BECAUSE OF THE CORONAVIRUS PANDEMIC?*
+*"At any time in the LAST 4 WEEKS, did (you/name) telework or work at
+home for pay BECAUSE OF THE CORONAVIRUS PANDEMIC?*
 
-However, this captures a different set of people than the Pulse, which asks:
- 
-*“Since January 1, 2021 [or “In the last 7 days” for later surveys], have you worked or volunteered outside your home?"*
+However, this captures a different set of people than the Pulse, which
+asks:
+
+*"Since January 1, 2021 [or "In the last 7 days" for later surveys],
+have you worked or volunteered outside your home?"*
 
 Three main differences with the question:
 
-1. In the Pulse, we categorize anyone who worked outside the home at any point as in-person. In the CPS, anyone who worked remotely is remote. E.g., If person X worked 3 days at home and 2 days in-person because of covid policied, they'd be remote in the CPS but in-person in the Pulse.
-2. The timeframe for the CPS is the last 4 weeks while the Pulse asks about the last 7 days (for most phases)
-3. The CPS only captures those who teleworked *because* of covid.
+1.  In the Pulse, we categorize anyone who worked outside the home at
+    any point as in-person. In the CPS, anyone who worked remotely is
+    remote. E.g., If person X worked 3 days at home and 2 days in-person
+    because of covid policied, they'd be remote in the CPS but in-person
+    in the Pulse.
+2.  The timeframe for the CPS is the last 4 weeks while the Pulse asks
+    about the last 7 days (for most phases)
+3.  The CPS only captures those who teleworked *because* of covid.
 
-Because of all the discrepancies, using data from the ATUS itself could be a better stratey to replicate the Pulse question. As a first step we:
+Because of all the discrepancies, using data from the ATUS itself could
+be a better stratey to replicate the Pulse question. As a first step we:
 
-* Get all respondents who did work in the last 7 days (i.e., those we label as "employed" in the Pulse)
-* From the hours these respondents spent working, calculate how many were in the workplace.
-* If a respondent spent *any* time in the workplace, they are categorized as in-person.
-* If a respondent spent no time in the workplace, they are categorized as remote.
+-   Get all respondents who did work in the last 7 days (i.e., those we
+    label as "employed" in the Pulse)
+-   From the hours these respondents spent working, calculate how many
+    were in the workplace.
+-   If a respondent spent *any* time in the workplace, they are
+    categorized as in-person.
+-   If a respondent spent no time in the workplace, they are categorized
+    as remote.
 
-Why look specifically at the workplace instead of just checking whether the time was spent outside the home? I was worried that a lot of remote workers might spend time working in libraries, coffeeshops, friends houses, trains (while commuting somewhere), etc. Although the Pulse survey only asks if they've worked "outside the home", the question is really asking if they've done in-person work at a workplace setting (hence why the follow-up question asks about the setting). In other words, if a Pulse respondent works remotely at a coffeeshop, they would still be remote for Pulse standards. Thus, determining whether an ATUS respondent spent work time at a workplace was a better way of getting at the in-person Pulse population.
+Why look specifically at the workplace instead of just checking whether
+the time was spent outside the home? I was worried that a lot of remote
+workers might spend time working in libraries, coffeeshops, friends
+houses, trains (while commuting somewhere), etc. Although the Pulse
+survey only asks if they've worked "outside the home", the question is
+really asking if they've done in-person work at a workplace setting
+(hence why the follow-up question asks about the setting). In other
+words, if a Pulse respondent works remotely at a coffeeshop, they would
+still be remote for Pulse standards. Thus, determining whether an ATUS
+respondent spent work time at a workplace was a better way of getting at
+the in-person Pulse population.
 
-An issue with this strategy is that some respondents did no work on the day they were surveyed (were surveyed on the weekend, etc). For cases where we have no ATUS information, we move on the next "best" data, the CPS question asking if they were remotely. Those who said they teleworked are categorized as remote, those that didn't are in-person.
+An issue with this strategy is that some respondents did no work on the
+day they were surveyed (were surveyed on the weekend, etc). For cases
+where we have no ATUS information, we move on the next "best" data, the
+CPS question asking if they were remotely. Those who said they
+teleworked are categorized as remote, those that didn't are in-person.
 
-Finally, due to the non-response rate to the teleworking question on the CPS, as a last resort, we use the Dingel and Neiman categorizations to know if the respondent's job is teleworkable or not.
+Finally, due to the non-response rate to the teleworking question on the
+CPS, as a last resort, we use the Dingel and Neiman categorizations to
+know if the respondent's job is teleworkable or not.
 
 ```{r}
 cats <- atusact %>%
@@ -498,7 +614,7 @@ cats <- atusact %>%
   dplyr::mutate(work_time = work_time/sum(work_time)) %>%
   spread(top_location,work_time) %>%
   replace(is.na(.),0) %>%
-  mutate(inperson = ifelse(Workplace > 0,1,0))
+  mutate(inperson = ifelse(Workplace > 0.2,1,0))
 atusact <- atusact %>% 
   mutate(top_category = case_when(
     setting == "NILF" ~ "NILF",
@@ -518,29 +634,30 @@ Export processed ATUS file:
 write.csv(atusact,"data_files/cleanvariables/atus/atus_full.csv")
 ```
 
-
-
 #### 3.1.3. Assess crosswalk
 
-To assess our crosswalk, we can compare the estimated population of remote workers from the Pulse and the ATUS. 
+To assess our crosswalk, we can compare the estimated population of
+remote workers from the Pulse and the ATUS.
 
-First, we can convert Pulse weeks into months. To keep it simple, I'm categorizing each week based on the month the majority of days fall into. If multiple weeks fall in the same month, I take the average of each week's estimates.
+First, we can convert Pulse weeks into months. To keep it simple, I'm
+categorizing each week based on the month the majority of days fall
+into. If multiple weeks fall in the same month, I take the average of
+each week's estimates.
 
-Week 28: April 14 - April 26
-Week 29: April 28 - May 10
-Week 30: May 12 - May 24
-Week 31: May 26 - June 7
-Week 32: June 9 - June 21
-Week 33: June 23 - July 5
-Week 34: July 21 - August 2
-Week 35: August 4 - August 16
-Week 36: August 18 - August 30
-Week 37: September 1 - September 13
-Week 38: September 15 - September 27
-Week 39: September 29 - October 11
+Week 28: April 14 - April 26 Week 29: April 28 - May 10 Week 30: May
+12 - May 24 Week 31: May 26 - June 7 Week 32: June 9 - June 21 Week 33:
+June 23 - July 5 Week 34: July 21 - August 2 Week 35: August 4 - August
+16 Week 36: August 18 - August 30 Week 37: September 1 - September 13
+Week 38: September 15 - September 27 Week 39: September 29 - October 11
 
 ```{r}
-wfh_est <- pulse_grouped %>%
+pulse <- read.csv("data_files/pulse/processed/all_phases.csv")
+```
+
+
+```{r}
+wfh_est <- pulse %>%
+  select(week,job,setting,weight) %>%
   mutate(month = case_when(
     week == 28 ~ 4,
     week == 29 ~ 4,
@@ -567,6 +684,7 @@ wfh_est <- pulse_grouped %>%
   mutate(type = "Pulse")
 ```
 
+
 ```{r}
 wfh_est <- rbind(wfh_est,atusact %>%
   filter(month %in% c(4,5,6,7,8,9,10) & year == 2021 & top_category %in% c("In-person","Remote")) %>%
@@ -586,7 +704,9 @@ wfh_est %>%
   kable()
 ```
 
-Our estimate for the ATUS is lower, although the difference is  small and remains somewhat consistent across the months. I would love to know what you think about it!
+Our estimate for the ATUS is lower, although the difference is small and
+remains somewhat consistent across the months. I would love to know what
+you think about it!
 
 ```{r}
 wfh_est %>%
@@ -608,15 +728,30 @@ cor(wfh_est[wfh_est$type == "ATUS",]$percent,wfh_est[wfh_est$type == "Pulse",]$p
 
 #### 3.1.4. Calculate time in each setting
 
-Having obtained a crosswalk between the ATUS and work categories of interest, we can now estimate the percent of time each group spent at home, at work, and outside the home and workplace ("leisure"). Before this calculation, a question I want to run by you: 
+Having obtained a crosswalk between the ATUS and work categories of
+interest, we can now estimate the percent of time each group spent at
+home, at work, and outside the home and workplace ("leisure"). Before
+this calculation, a question I want to run by you:
 
-In the Pulse and ATUS, a respondent who does any in-person work will be categorized as "in-person" even if they spend time working at home. This means many of our "in-person" workers will really be *hybrid* workers who do some of their work at home or in "remote workplaces" (eg. coffeeshop). Similarly, in-person workers will spend some work hours outside the home (though not in the workplace). Because our infection proportions are based on settings (home, workplace, leisure (outside home and outside workplace)), we will calculate the average hours in each setting, but when we *divide* infections, we will have to consider time spent working in each setting. 
+In the Pulse and ATUS, a respondent who does any in-person work will be
+categorized as "in-person" even if they spend time working at home. This
+means many of our "in-person" workers will really be *hybrid* workers
+who do some of their work at home or in "remote workplaces" (eg.
+coffeeshop). Similarly, in-person workers will spend some work hours
+outside the home (though not in the workplace). Because our infection
+proportions are based on settings (home, workplace, leisure (outside
+home and outside workplace)), we will calculate the average hours in
+each setting, but when we *divide* infections, we will have to consider
+time spent working in each setting.
 
 To give a simple example:
 
-* Remote workers had 10 infections
-* Remote workers spent 50% of time at home and 50% time outside the home (not at the workplace). We attribute 5 infections to each setting.
-* From time at home, 20% was spent working. From time outside home, 40% of time was spent working. We attribute 3 infections to work.
+-   Remote workers had 10 infections
+-   Remote workers spent 50% of time at home and 50% time outside the
+    home (not at the workplace). We attribute 5 infections to each
+    setting.
+-   From time at home, 20% was spent working. From time outside home,
+    40% of time was spent working. We attribute 3 infections to work.
 
 As a first step, we can calculate time spent in each setting:
 
@@ -652,7 +787,7 @@ time_per_setting %>%
 Exporting time-per-setting:
 
 ```{r}
-write.csv(time_per_setting,"data_files/cleanvariables/atus/time_per_setting.csv")
+write.csv(time_per_setting,"data_files/atus/time_per_setting.csv")
 ```
 
 Now, we can merge our Pulse data with information on time per setting:
@@ -666,21 +801,31 @@ pulse <- pulse %>%
     setting == "working from home" ~ "Remote",
     TRUE ~ "In-person"
   ))
+```
 
+```{r}
 # Spread time per setting data for easier merging
 time_per_setting <- time_per_setting %>%
   mutate(top_location = paste0("Time_At_",top_location)) %>%
   spread(top_location,time)
-
+  
 # Merge data
 pulse <- pulse %>%
   merge(.,time_per_setting,by="top_category")
 ```
 
-
 #### 3.1.5. Sanity check time in each setting
 
-Because we are averaging time in each setting from across the pandemic period, we risk over or underestimating the number of infections occuring in a given setting. If, for example, the time spent during leisure increased significantly in the last two months we study, our leisure hour average will underestimate leisure time in those two months and result in an underestimate of infections. The upshot: for our procedure to be accurate, we would want the percent of time spent in each setting to remain consistent. With this in mind, we looked at ATUS data from April 2020 to December 2021 to look at time spent in each setting per month:
+Because we are averaging time in each setting from across the pandemic
+period, we risk over or underestimating the number of infections
+occuring in a given setting. If, for example, the time spent during
+leisure increased significantly in the last two months we study, our
+leisure hour average will underestimate leisure time in those two months
+and result in an underestimate of infections. The upshot: for our
+procedure to be accurate, we would want the percent of time spent in
+each setting to remain consistent. With this in mind, we looked at ATUS
+data from April 2020 to December 2021 to look at time spent in each
+setting per month:
 
 ```{r}
 time_date <- atusact %>%
@@ -704,7 +849,8 @@ time_date %>%
   scale_color_manual(name="Setting",values=wes_palette(n=3, name="FantasticFox1",type="continuous")) 
 ```
 
-Visually, the hours seem stable to me, but I'd love to get your thoughts. Looking at the variance of these monthly averages:
+Visually, the hours seem stable to me, but I'd love to get your
+thoughts. Looking at the variance of these monthly averages:
 
 ```{r}
 time_date %>%
@@ -713,107 +859,199 @@ time_date %>%
   kable()
 ```
 
-### 3.2. Relative risk: Idenitifying risk-takers and risk-averse respondents
+Exporting Pulse data with time per setting:
+
+```{r}
+write.csv(pulse,"data_files/pulse/processed/pulse_with_time.csv")
+```
+
+
+### 3.2. Idenitifying risk-takers and risk-averse respondents
+
 #### 3.2.1. YouGov data overview
-Next, because the risk of an hour spent in a setting depends on whether respondents practice preventive behaviors, we obtain an estimate of whether the respondent is a risk-taker or is risk-averse. 
 
-While the Pulse does not contain data on respondents’ preventative behavior, it does contain questions on their beliefs about COVID-19 vaccines which have been shown to be correlated with preventive-behavior habits. For example, a KFF report finds that unvaccinated adults “are more likely to say they are not worried they personally will get seriously sick from the coronavirus” and were much less likely than vaccinated adults to report that the Delta variant made them more likely to wear a mask or avoid large gatherings. Thus, we create the following prediction model using relevant variables available in both the YouGov and Pulse surveys:
+Next, because the risk of an hour spent in a setting depends on whether
+respondents practice preventive behaviors, we obtain an estimate of
+whether the respondent is a risk-taker or is risk-averse.
 
+While the Pulse does not contain data on respondents' preventative
+behavior, it does contain questions on their beliefs about COVID-19
+vaccines which have been shown to be correlated with preventive-behavior
+habits. For example, a KFF report finds that unvaccinated adults "are
+more likely to say they are not worried they personally will get
+seriously sick from the coronavirus" and were much less likely than
+vaccinated adults to report that the Delta variant made them more likely
+to wear a mask or avoid large gatherings. Thus, we create the following
+prediction model using relevant variables available in both the YouGov
+and Pulse surveys:
 
 DISCUSSION ABOUT RISK IN THE WORKPLACE ETC
 
-The YouGov survey contains the following relevant variables for risky behavior during leisure:
+The YouGov survey contains the following relevant variables for risky
+behavior during leisure:
 
-"Thinking about the last 7 days... how often have you taken the following measures to protect yourself or others from coronavirus? As a reminder, please exclude any measures that you have already taken for reasons other than coronavirus."
+"Thinking about the last 7 days... how often have you taken the
+following measures to protect yourself or others from coronavirus? As a
+reminder, please exclude any measures that you have already taken for
+reasons other than coronavirus."
 
-1. **washed_hands:** "...Washed hands with soap and water"
-2. **hand_sanitizer:** "...Used hand sanitiser"
-3. **avoid_contact_covid:** "...Avoided contact with people who have symptoms or you think may have been exposed to the coronavirus"
-4. **avoid_public_transit:** "...Avoided taking public transport"
-4. **avoid_guests:** "...Avoided having guests to your home"
-5. **avoid_gatherings_small:** "...Avoided small social gatherings (not more than 2 people)"
-6. **avoid_gatherings_medium:** "...Avoided medium-sized social gatherings (between 3 and 10 people)"
-7. **avoid_gatherings_large:** "...Avoided large-sized social gatherings (more than 10 people)"
-8. **avoid_shops:** "...Avoided going to shops"
-9. **avoid_public_events:** "...Avoided attending public events, such as sports matches, festivals, theatres, clubs, or going to religious services"
-10. **avoid_hh_indoors:** "...Avoided mixing with other households indoors"
-11. **maskgrocery:** "...Worn a face mask inside a grocery store / supermarket"
-12. **maskclotheshop:** "...Worn a face mask inside a clothing / footwear shop"
-13. **masktransit:** "...Worn a face mask on public transportation"
+1.  **washed_hands:** "...Washed hands with soap and water"
+2.  **hand_sanitizer:** "...Used hand sanitiser"
+3.  **avoid_contact_covid:** "...Avoided contact with people who have
+    symptoms or you think may have been exposed to the coronavirus"
+4.  **avoid_public_transit:** "...Avoided taking public transport"
+5.  **avoid_guests:** "...Avoided having guests to your home"
+6.  **avoid_gatherings_small:** "...Avoided small social gatherings (not
+    more than 2 people)"
+7.  **avoid_gatherings_medium:** "...Avoided medium-sized social
+    gatherings (between 3 and 10 people)"
+8.  **avoid_gatherings_large:** "...Avoided large-sized social
+    gatherings (more than 10 people)"
+9.  **avoid_shops:** "...Avoided going to shops"
+10. **avoid_public_events:** "...Avoided attending public events, such
+    as sports matches, festivals, theatres, clubs, or going to religious
+    services"
+11. **avoid_hh_indoors:** "...Avoided mixing with other households
+    indoors"
+12. **maskgrocery:** "...Worn a face mask inside a grocery store /
+    supermarket"
+13. **maskclotheshop:** "...Worn a face mask inside a clothing /
+    footwear shop"
+14. **masktransit:** "...Worn a face mask on public transportation"
 
-
-Our current method uses the last three variables (maskgrocery, maskclotheshop, and masktransit) to categorize respondents as risky or not risky. We want to make sure our measure of risky behavior pertains exclusively to the leisure setting, so we excluded the question *1.Thinking about the last 7 days, how often have you worn a face mask at your place of work?*. However, it is still possible that questions 2-4 are contaminated by work-specific behavior if the respondent works in these settings (grocery store, footwear shop, etc). To get around this issue, we identify workers who are likely to work in these locations based on the job they indicated on the survey and treat their answer to the respective location question as missing, imputing it on the basis of other responses. 
+Our current method uses the last three variables (maskgrocery,
+maskclotheshop, and masktransit) to categorize respondents as risky or
+not risky. We want to make sure our measure of risky behavior pertains
+exclusively to the leisure setting, so we excluded the question
+*1.Thinking about the last 7 days, how often have you worn a face mask
+at your place of work?*. However, it is still possible that questions
+2-4 are contaminated by work-specific behavior if the respondent works
+in these settings (grocery store, footwear shop, etc). To get around
+this issue, we identify workers who are likely to work in these
+locations based on the job they indicated on the survey and treat their
+answer to the respective location question as missing, imputing it on
+the basis of other responses.
 
 The following answer choices are available for these questions:
 
-* Always
-* Frequently
-* Sometimes
-* Rarely
-* Not at all
+-   Always
+-   Frequently
+-   Sometimes
+-   Rarely
+-   Not at all
 
-Ideally, if someone rarely or does not at all wear a mask in these settings, we would know they are risk-takers. However, we are concerned that someone might select these options because they haven't been to the setting. To give an example, if someone says they haven't at all worn a mask in public transport we want to know if this is because they are risky or because they simply haven't been on public transport. To figure this out, we use the question: *“Thinking about the last 7 days... how often have you [avoided taking public transport] to protect yourself or others from coronavirus? As a reminder, please exclude any measures that you have already taken for reasons other than coronavirus.”*
+Ideally, if someone rarely or does not at all wear a mask in these
+settings, we would know they are risk-takers. However, we are concerned
+that someone might select these options because they haven't been to the
+setting. To give an example, if someone says they haven't at all worn a
+mask in public transport we want to know if this is because they are
+risky or because they simply haven't been on public transport. To figure
+this out, we use the question: *"Thinking about the last 7 days... how
+often have you [avoided taking public transport] to protect yourself or
+others from coronavirus? As a reminder, please exclude any measures that
+you have already taken for reasons other than coronavirus."*
 
-Our goal is to use this question to figure out if someone has taken public transport the last 7 days. If we think they have, then they must indicate to have worn a mask at least some of the time. However, if they have not, then their mask-wearing behavior in the setting becomes irrelevant.
+Our goal is to use this question to figure out if someone has taken
+public transport the last 7 days. If we think they have, then they must
+indicate to have worn a mask at least some of the time. However, if they
+have not, then their mask-wearing behavior in the setting becomes
+irrelevant.
 
-Responses ‘always’ and ‘not at all’ seem to me as the most straight-forward to interpret:
+Responses 'always' and 'not at all' seem to me as the most
+straight-forward to interpret:
 
-* Always
-    - Person who has not taken public transport because they are being covid-cautious. This person would be considered risk-averse,
-        + One issue you raised was that someone might "avoid" public transport for reasons other than covid (e.g., they have a car and drive everywhere) so
-        they might *not* actually be risk averse even if they're never in the setting. Yet, I think the way the question is asked helps us avoid the problem
-        by explicitly asking respondents to "exclude any measures that you have already taken for reasons other than coronavirus". So, if someone does not
-        take public transport because they have a car, their response to the question "Avoided taking public transport" would be "not at all". 
-* Not at all
-    - Person who has taken public transport with the same frequency as they would regardless of covid. This could mean:
-        + They haven’t taken any public transport for other reasons (e.g., they have a car)
-        + They have taken public transport as they normally would 
+-   Always
+    -   Person who has not taken public transport because they are being
+        covid-cautious. This person would be considered risk-averse,
+        -   One issue you raised was that someone might "avoid" public
+            transport for reasons other than covid (e.g., they have a
+            car and drive everywhere) so they might *not* actually be
+            risk averse even if they're never in the setting. Yet, I
+            think the way the question is asked helps us avoid the
+            problem by explicitly asking respondents to "exclude any
+            measures that you have already taken for reasons other than
+            coronavirus". So, if someone does not take public transport
+            because they have a car, their response to the question
+            "Avoided taking public transport" would be "not at all".
+-   Not at all
+    -   Person who has taken public transport with the same frequency as
+        they would regardless of covid. This could mean:
+        -   They haven't taken any public transport for other reasons
+            (e.g., they have a car)
+        -   They have taken public transport as they normally would
 
+The responses "Frequently", "Sometimes", and "Rarely" are harder to
+interpret. The most straightforward example:
 
-The responses “Frequently”, “Sometimes”, and “Rarely” are harder to interpret. The most straightforward example:
+-   Person who used to take the bus every single day but reduced their
+    bus rides because of covid concerns. They didn't reduce bus rides
+    fully or else they would have said "Always" so we know they spent at
+    least some time on the bus.
+    -   For example, person X used to take the bus to work 5 days a
+        week, but due to covid concerns they were able to get a ride
+        with a friend for 4 out of the 5 days. Because they spent *some*
+        time on the bus, we would expect them to have worn a mask.
 
-* Person who used to take the bus every single day but reduced their bus rides because of covid concerns. They didn’t reduce bus rides fully or else they would have said “Always” so we know they spent at least some time on the bus.
-    - For example, person X used to take the bus to work 5 days a week, but due to covid concerns they were able to get a ride with a friend for 4 out of
-    the 5 days. Because they spent *some* time on the bus, we would expect them to have worn a mask.
+But the question is, do we also believe this slightly more convoluted
+example:
 
-But the question is, do we also believe this slightly more convoluted example:
+-   Person who never used the bus this week but only some of the times
+    due to covid concerns
+    -   For example, person X was going to take the bus on Wednesday,
+        but the bus was delayed and person X was forced to walk. On
+        Thursday, person X was going to ride the bus, but they got
+        nervous about covid and decided to walk instead.
 
-* Person who never used the bus this week but only some of the times due to covid concerns
-    - For example, person X was going to take the bus on Wednesday, but the bus was delayed and person X was forced to walk. On Thursday, person X was going
-    to ride the bus, but they got nervous about covid and decided to walk instead. 
+I honestly don't feel super worried about this kind of example. In
+general, my sense is that:
 
-I honestly don’t feel super worried about this kind of example. In general, my sense is that:
+-   someone who says they 'frequently', 'sometimes', or 'rarely' avoided
+    taking public transport are people who spent at least some time on
+    the bus.
+-   someone who says they 'always' avoided taking public transport did
+    not spend any time on the bus because they were worried about covid
+-   someone who did 'not at all' avoid taking public transport might
+    have spent a lot of time on public transport or spent no time on it
+    for reasons other than covid concerns
+    -   this makes it the least informative response because we don't
+        know what to expect for mask behavior, and we don't know whether
+        they are risk-takers or not
 
-* someone who says they ‘frequently’, ‘sometimes’, or ‘rarely’ avoided taking public transport are people who spent at least some time on the bus. 
-* someone who says they ‘always’ avoided taking public transport did not spend any time on the bus because they were worried about covid
-* someone who did ‘not at all’ avoid taking public transport might have spent a lot of time on public transport or spent no time on it for reasons other
-than covid concerns
-    - this makes it the least informative response because we don’t know what to expect for mask behavior, and we don’t know whether they are risk-takers or
-    not
-    
 Thus, for each setting we have three possibilities:
 
-* Risk-averse: If they "Always", "Frequently", or "Sometimes" wear a mask and/or they "Always" avoided the setting
-* Risk-taker: If they "Frequently", "Sometimes", or "Rarely" avoid the setting and "rarely" or "not at all" wear a mask
-* Unknown: If they "Not at all" avoided the setting and "rarely" or "not at all" wear a mask
+-   Risk-averse: If they "Always", "Frequently", or "Sometimes" wear a
+    mask and/or they "Always" avoided the setting
+-   Risk-taker: If they "Frequently", "Sometimes", or "Rarely" avoid the
+    setting and "rarely" or "not at all" wear a mask
+-   Unknown: If they "Not at all" avoided the setting and "rarely" or
+    "not at all" wear a mask
 
 Now we want to know:
 
-1. How do we categorize those "unknown" respondents?
-2. Once we have risk-level for each setting, how do we categorize the respondent overall? If they are risky in one setting? If they are risky in two settings? Etc. 
+1.  How do we categorize those "unknown" respondents?
+2.  Once we have risk-level for each setting, how do we categorize the
+    respondent overall? If they are risky in one setting? If they are
+    risky in two settings? Etc.
 
-To do this, I checked the different permutations of risk by setting with the average of the following variables (where always = 5 and not at all = 1)
+To do this, I checked the different permutations of risk by setting with
+the average of the following variables (where always = 5 and not at all
+= 1)
 
-1. washed_hands: "...Washed hands with soap and water"
-2. hand_sanitizer: "...Used hand sanitiser"
-3. avoid_contact_covid: "...Avoided contact with people who have symptoms or you think may have been exposed to the coronavirus"
-4. avoid_guests: "...Avoided having guests to your home"
-5. avoid_gatherings_small: "...Avoided small social gatherings (not more than 2 people)"
-6. avoid_gatherings_medium: "...Avoided medium-sized social gatherings (between 3 and 10 people)"
-7. avoid_gatherings_large: "...Avoided large-sized social gatherings (more than 10 people)"
-8. avoid_public_events: "...Avoided attending public events, such as sports matches, festivals, theatres, clubs, or going to religious services"
-9. avoid_hh_indoors: "...Avoided mixing with other households indoors"
-
+1.  washed_hands: "...Washed hands with soap and water"
+2.  hand_sanitizer: "...Used hand sanitiser"
+3.  avoid_contact_covid: "...Avoided contact with people who have
+    symptoms or you think may have been exposed to the coronavirus"
+4.  avoid_guests: "...Avoided having guests to your home"
+5.  avoid_gatherings_small: "...Avoided small social gatherings (not
+    more than 2 people)"
+6.  avoid_gatherings_medium: "...Avoided medium-sized social gatherings
+    (between 3 and 10 people)"
+7.  avoid_gatherings_large: "...Avoided large-sized social gatherings
+    (more than 10 people)"
+8.  avoid_public_events: "...Avoided attending public events, such as
+    sports matches, festivals, theatres, clubs, or going to religious
+    services"
+9.  avoid_hh_indoors: "...Avoided mixing with other households indoors"
 
 ```{r,message=FALSE,warning=FALSE}
 clean_vars <- read.csv("data_files/cleanvariables/yougov/yougov_cleanvars.csv")
@@ -833,7 +1071,6 @@ yougov <- read.csv("data_files/yougov/yougov.csv") %>%
                                   ifelse(masktransit == "Not at all" & avoid_public_transit == "Not at all",-1,1)),)
 ```
 
-
 ```{r}
 prep <- yougov %>%
   select(-clean_vars[clean_vars$type == "pred",]$newname) %>%
@@ -847,14 +1084,23 @@ prep <- yougov %>%
                   frequency == "Sometimes" ~ 3,
                   frequency == "Rarely" ~ 2,
                   frequency == "Not at all" ~ 1)) %>%
-  dplyr::mutate_at(c("risky_shop","risky_grocery","risky_transport"),
-                   recode,
-                   "1" = "Risky",
-                   "0" = "Not risky",
-                   "-1" = "Unknown") %>%
+  dplyr::mutate("risky_shop" = case_when(
+    risky_shop == "1" ~ "Risky",
+    risky_shop == "0" ~ "Not risky",
+    risky_shop == "-1" ~ "Unknown"
+  ),
+  "risky_transport" = case_when(
+    risky_transport == "1" ~ "Risky",
+    risky_transport == "0" ~ "Not risky",
+    risky_transport == "-1" ~ "Unknown"
+  ),
+  "risky_grocery" = case_when(
+    risky_grocery == "1" ~ "Risky",
+    risky_grocery == "0" ~ "Not risky",
+    risky_grocery == "-1" ~ "Unknown"
+  )) %>%
   mutate(combine = paste0("Shop:",risky_shop," + Grocery:",risky_grocery," + Transport:",risky_transport))
 ```
-
 
 ```{r}
 prep %>%
@@ -866,8 +1112,10 @@ prep %>%
   kable()
 ```
 
-Looking at the data, my instinct would be to recategorize "Unknown" as risky for each setting. Then, I would categorize any respondents with two or more risky settings as risky overall (eg, choose based on majority). Doing this we obtain the following totals:
-
+Looking at the data, my instinct would be to recategorize "Unknown" as
+risky for each setting. Then, I would categorize any respondents with
+two or more risky settings as risky overall (eg, choose based on
+majority). Doing this we obtain the following totals:
 
 ```{r}
 yougov <- yougov %>% 
@@ -883,7 +1131,7 @@ yougov <- yougov %>%
 Now, looking at different behaviors by group:
 
 ```{r}
-yougov %>% 
+yougov_2 <- yougov %>% 
   select(avoid_contact_covid,
        avoid_gatherings_small,
        avoid_gatherings_medium,
@@ -906,7 +1154,8 @@ yougov %>%
   dplyr::summarise(count = n()) %>%
   dplyr::mutate(total = sum(count),
                 percent = count / total,
-                is_risky = ifelse(is_risky == 1,"Risk-taker","Risk-averse")) %>%
+                is_risky = ifelse(is_risky == 1,"Risk-taker","Risk-averse"))
+yougov_2 %>%
   ggplot(aes(x=frequency,y=percent,fill=is_risky)) + 
   geom_col(position = 'dodge') + 
   facet_wrap(~behavior) +
@@ -920,7 +1169,7 @@ yougov %>%
 Collapsing to look at averages where "Always" = 5 and "Not at all" = 1
 
 ```{r}
-yougov %>% 
+yougov_2 %>% 
   dplyr::mutate(frequency = case_when(
                   frequency == "Always" ~ 5,
                   frequency == "Frequently" ~ 4,
@@ -935,6 +1184,10 @@ yougov %>%
 ```
 
 ```{r}
+count(yougov$frequency)
+```
+
+```{r}
 yougov %>%
   mutate(is_risky = ifelse(is_risky==0,"Not Risky","Risky")) %>%
   group_by(is_risky) %>%
@@ -945,7 +1198,10 @@ yougov %>%
 
 [TALK ABOUT DEFINING RISK AVERSE VS RISK TAKER]
 
-We estimate that around 80% of Americans were risk-averse during the time of the survey. To sanity check our estimate, we use a different survey conducted by the NYTimes on mask wearing behavior, obtaining a similar result:
+We estimate that around 80% of Americans were risk-averse during the
+time of the survey. To sanity check our estimate, we use a different
+survey conducted by the NYTimes on mask wearing behavior, obtaining a
+similar result:
 
 ```{r}
 nytimes <- read_csv(url("https://raw.githubusercontent.com/nytimes/covid-19-data/master/mask-use/mask-use-by-county.csv"))
@@ -969,106 +1225,114 @@ merge(nytimes,pops,by="COUNTYFP") %>%
 
 #### 3.2.3. Risky behavior model
 
-Having categorized YouGov respondents as risk-averse or risk-takers, we can create a prediction model using variables also available in the Pulse relating to whether a person is vaccinated or not, if they want to be vaccinated, and their general beliefs about the vaccine, and government/health authorities:
+Having categorized YouGov respondents as risk-averse or risk-takers, we
+can create a prediction model using variables also available in the
+Pulse relating to whether a person is vaccinated or not, if they want to
+be vaccinated, and their general beliefs about the vaccine, and
+government/health authorities:
 
-* isvax: Have you had the first or second doses of a Coronavirus (COVID-19) vaccine?
-  + 0 = "No, neither"
-  + 1 = "Yes, one dose" OR "Yes, two doses"
-
-* wantsvax: If a Covid-19 vaccine were made available to me this week, I would definitely get it
-  + 0 = 2, 3, 4, 5 (where 5 = strongly disagree)
-  + 1 = 1 (where 1 = strongly agree)
-
-* gov_skeptic: I believe government health authorities in my country will provide me with an effective COVID19 vaccine
-  + 0 = 1, 2, 3 (where 1 = strongly agree)
-  + 1 = 4, 5 (where 5 = strongly disagree)
-
-* test_concerns: I have concerns there has not been enough testing of vaccines
-  + 0 = No
-  + 1 = Yes
-
-* mistrustvax: How much do you trust COVID-19 vaccines?
-  + 0 = 1, 2, 3 (where 1 = very much)
-  + 1 = 4, 5 (where 5 = not at all)
-
-* side_effects: I have concerns about side effects
-  + 0 = No
-  + 1 = Yes
-  
-* gen_vac_skeptic: I don't think a vaccine would be effective enough
-  + 0 = No
-  + 1 = Yes
-
+-   isvax: Have you had the first or second doses of a Coronavirus
+    (COVID-19) vaccine?
+    -   0 = "No, neither"
+    -   1 = "Yes, one dose" OR "Yes, two doses"
+-   wantsvax: If a Covid-19 vaccine were made available to me this week,
+    I would definitely get it
+    -   0 = 2, 3, 4, 5 (where 5 = strongly disagree)
+    -   1 = 1 (where 1 = strongly agree)
+-   gov_skeptic: I believe government health authorities in my country
+    will provide me with an effective COVID19 vaccine
+    -   0 = 1, 2, 3 (where 1 = strongly agree)
+    -   1 = 4, 5 (where 5 = strongly disagree)
+-   test_concerns: I have concerns there has not been enough testing of
+    vaccines
+    -   0 = No
+    -   1 = Yes
+-   mistrustvax: How much do you trust COVID-19 vaccines?
+    -   0 = 1, 2, 3 (where 1 = very much)
+    -   1 = 4, 5 (where 5 = not at all)
+-   side_effects: I have concerns about side effects
+    -   0 = No
+    -   1 = Yes
+-   gen_vac_skeptic: I don't think a vaccine would be effective enough
+    -   0 = No
+    -   1 = Yes
 
 **YouGov to Pulse vaccine variables**
 
-
-YouGov Var Name | YouGov Description | Pulse Description
-----------------|--------------------|------------------
-wantsvax | If a Covid-19 vaccine were made available to me this week, I would definitely get it | Once a vaccine to prevent COVID-19 is available to you, would you
-gov_skeptic | I  believe government health authorities in my country will provide me with an effective COVID19 vaccine | I don’t trust the government
-test_concerns | I have concerns there has not been enough testing of vaccines | I plan to wait and see if it is safe and may get it later
-mistrustvax | How much do you trust COVID-19 vaccines? | I don’t trust COVID-19 vaccines
-side_effects | I have concerns about side effects |  I am concerned about possible side effects of a COVID-19 vaccine
-gen_vac_skeptic | I don't think a vaccine would be effective enough | I don't think vaccines are beneficial
-
+| YouGov Var Name | YouGov Description                                                                                      | Pulse Description                                                 |
+|----------------------|---------------------------|------------------------|
+| wantsvax        | If a Covid-19 vaccine were made available to me this week, I would definitely get it                    | Once a vaccine to prevent COVID-19 is available to you, would you |
+| gov_skeptic     | I believe government health authorities in my country will provide me with an effective COVID19 vaccine | I don't trust the government                                      |
+| test_concerns   | I have concerns there has not been enough testing of vaccines                                           | I plan to wait and see if it is safe and may get it later         |
+| mistrustvax     | How much do you trust COVID-19 vaccines?                                                                | I don't trust COVID-19 vaccines                                   |
+| side_effects    | I have concerns about side effects                                                                      | I am concerned about possible side effects of a COVID-19 vaccine  |
+| gen_vac_skeptic | I don't think a vaccine would be effective enough                                                       | I don't think vaccines are beneficial                             |
 
 **Notes on relevant Pulse variables**
 
-All Pulse phases contain the following question:
-* **isvax:** Have you received a COVID-19 vaccine
-  + 1 = Yes
-  + 2 = No
-  
-If respondents say they've received the vaccine, they answer the follow-up question (variable = **all_doses**):
+All Pulse phases contain the following question: \* **isvax:** Have you
+received a COVID-19 vaccine + 1 = Yes + 2 = No
 
-* Phase 3.1: Did you receive (or do you plan to receive) all required doses
-  + 1 = Yes
-  + 2 = No
-  + -99 = Did not respond
-* Phase 3.2: Did you receive (or do you plan to receive) all required doses
-  + 1 = Yes, received all doses
-  + 2 = Yes, plan to receive all required doses
-  + 3 = No, don't plan to receive all required doses
-  + -99 = Did not respond
-* Phase 3.3 and 3.4: How many dose(s) of a COVID-19 vaccine have you received
-  + 1 = 1 vaccination
-  + 2 = 2 vaccinations
-  + 3 = 3 vaccinations
-  + 4 = 4 or more vaccinations
-  + 5 = Don’t know
-  + -99 = Did not respond
+If respondents say they've received the vaccine, they answer the
+follow-up question (variable = **all_doses**):
 
-If respondents *haven't* received the vaccine (isvax == No), all Pulse phases answer the follow-up question:
-* **wantsvax:** Once a  vaccine to prevent COVID-19 is available to you, would you…
-  + 1 = Definitely get a vaccine
-  + 2 = Probably get a vaccine
-  + 3 = Be unsure about getting a vaccine
-  + 4 = Probably NOT get a vaccine
-  + 5 = Definitely NOT get a vaccine
-  + -99 - Did not respond
+-   Phase 3.1: Did you receive (or do you plan to receive) all required
+    doses
+    -   1 = Yes
+    -   2 = No
+    -   -99 = Did not respond
+-   Phase 3.2: Did you receive (or do you plan to receive) all required
+    doses
+    -   1 = Yes, received all doses
+    -   2 = Yes, plan to receive all required doses
+    -   3 = No, don't plan to receive all required doses
+    -   -99 = Did not respond
+-   Phase 3.3 and 3.4: How many dose(s) of a COVID-19 vaccine have you
+    received
+    -   1 = 1 vaccination
+    -   2 = 2 vaccinations
+    -   3 = 3 vaccinations
+    -   4 = 4 or more vaccinations
+    -   5 = Don't know
+    -   -99 = Did not respond
 
-The questions we use to obtain our predictors (gov_skeptic, mistrust_vax, side_effects) are only asked if:
+If respondents *haven't* received the vaccine (isvax == No), all Pulse
+phases answer the follow-up question: \* **wantsvax:** Once a vaccine to
+prevent COVID-19 is available to you, would you... + 1 = Definitely get
+a vaccine + 2 = Probably get a vaccine + 3 = Be unsure about getting a
+vaccine + 4 = Probably NOT get a vaccine + 5 = Definitely NOT get a
+vaccine + -99 - Did not respond
 
-* Phase 3.1 and 3.2: Person has not received all doses (i.e., isvax == No or all_doses == No) and they *did not* say they'd definitely get a vaccine (wantsvax != 1)
-* Phase 3.3 and 3.4: Person has not received the vaccine (isvax == No), regardless of doses, and they do not definitely want the vaccine (wantsvax != 1)
+The questions we use to obtain our predictors (gov_skeptic,
+mistrust_vax, side_effects) are only asked if:
+
+-   Phase 3.1 and 3.2: Person has not received all doses (i.e., isvax ==
+    No or all_doses == No) and they *did not* say they'd definitely get
+    a vaccine (wantsvax != 1)
+-   Phase 3.3 and 3.4: Person has not received the vaccine (isvax ==
+    No), regardless of doses, and they do not definitely want the
+    vaccine (wantsvax != 1)
 
 In line with this, we set our relevant variables as follows:
 
-* isvax
-  + Phase 3.1 and 3.2: Yes if received or planned to received all required doses
-  + Phase 3.3 and 3.4: Yes if received a vaccine
-* wantsvax
-  + All phases: Yes if haven't received a vaccine but will definitely get a vaccine
-* mistrust_vax, gov_skeptic, side_effects: Can only be set to "Yes" if person hasn't received a vaccine and doesn't want to
-* other: Set to "Yes" if person doesn't want vaccine but for reasons outside of those in these variables
+-   isvax
+    -   Phase 3.1 and 3.2: Yes if received or planned to received all
+        required doses
+    -   Phase 3.3 and 3.4: Yes if received a vaccine
+-   wantsvax
+    -   All phases: Yes if haven't received a vaccine but will
+        definitely get a vaccine
+-   mistrust_vax, gov_skeptic, side_effects: Can only be set to "Yes" if
+    person hasn't received a vaccine and doesn't want to
+-   other: Set to "Yes" if person doesn't want vaccine but for reasons
+    outside of those in these variables
 
 We follow this same logic when setting YouGov variables:
 
-* wantsvax is only set to "Yes" if person "Strongly agrees" that they'd definitely get the vaccine
-* variables gov_skeptic, mistrust_vax, side_effects, and other are automatically set to "No" if person wants vaccine
-
-
+-   wantsvax is only set to "Yes" if person "Strongly agrees" that
+    they'd definitely get the vaccine
+-   variables gov_skeptic, mistrust_vax, side_effects, and other are
+    automatically set to "No" if person wants vaccine
 
 ```{r}
 yougov <- yougov %>% 
@@ -1094,8 +1358,6 @@ yg <- yougov %>%
   mutate(have_info = ifelse(vax == "NoVax",0,1))
 ```
 
-
-
 #### 3.2.4. Running prediction models
 
 ```{r}
@@ -1107,9 +1369,16 @@ risky_model<- glm(is_risky ~
                     yg,
                     family = "binomial")
 summary(risky_model)
+save(risky_model, file = "data_files/models/yougov_risky_behavior.rda")
 ```
 
-Now, we can apply the model to the Pulse data to make predictions. First, we recode Pulse data to match the model's input:
+Now, we can apply the model to the Pulse data to make predictions.
+First, we recode Pulse data to match the model's input:
+
+```{r}
+pulse <- read.csv("data_files/pulse/processed/pulse_with_time.csv")
+```
+
 
 ```{r}
 pulse <- pulse %>%
@@ -1133,11 +1402,16 @@ pulse <- pulse %>%
 Let's add age, state, education level
 
 ```{r}
+load(file="data_files/models/yougov_risky_behavior.rda")
+```
+
+```{r}
 preds <- predict(risky_model,pulse,type="response")
 pulse$risky_pred <- preds
 ```
 
-For now, let's assume that anyone with more than a 25% of being risky is risky:
+For now, let's assume that anyone with more than a 25% of being risky is
+risky:
 
 ```{r}
 pulse %>%
@@ -1153,70 +1427,123 @@ pulse %>%
 pulse$is_risky <- ifelse(pulse$risky_pred > 0.25, 1, 0)
 ```
 
-We can use YouGov to estimate the proportion at each month? Or something like that. And then we can use that to set the threshold. 
-Add more gradiation on the 'wanting infection' variable (don't make binary)
+We can use YouGov to estimate the proportion at each month? Or something
+like that. And then we can use that to set the threshold. Add more
+gradiation on the 'wanting infection' variable (don't make binary)
 
-### 3.3. Risky behavior multiplier
-[Discussion about which model to use]
-Having estimated whether someone wears a mask in leisure settings, we want to know how much riskier not wearing a mask is while at leisure. We obtain this risk multiplier using this Nature study of 198,077 US participants which finds that self-reported ‘sometimes’, ‘most of the time’, and ‘always’ use of face mask was associated with an average 68% reduced risk of predicted COVID-19 compared to individuals who wore face masks none of the time. Findings are consistent with this CDC study that finds mask wearing reduced risk of infection by 70%. In line with the Nature study, we say that, for risk-takers, a hour spent at leisure is 3.125 (1/0.32) times riskier.
+Export Pulse data with risky behavior and time information:
 
-### 3.4. Relative risk: People in household
+```{r}
+write.csv(pulse,"data_files/pulse/processed/pulse_risky_information.csv")
+```
 
-If someone lives alone we assign a risk multiplier of 0 because hours spent alone at home are not risky. We use the Pulse question, *How many total people (adults and children) currently live in your household, including youself?* to set the binary varibale, **lives_with_others**
+### 3.3.Risky behavior multiplier
+
+[Discussion about which model to use] Having estimated whether someone
+wears a mask in leisure settings, we want to know how much riskier not
+wearing a mask is while at leisure. We obtain this risk multiplier using
+this Nature study of 198,077 US participants which finds that
+self-reported 'sometimes', 'most of the time', and 'always' use of face
+mask was associated with an average 68% reduced risk of predicted
+COVID-19 compared to individuals who wore face masks none of the time.
+Findings are consistent with this CDC study that finds mask wearing
+reduced risk of infection by 70%. In line with the Nature study, we say
+that, for risk-takers, a hour spent at leisure is 3.125 (1/0.32) times
+riskier.
+
+### 3.4 People in household
+
+If someone lives alone we assign a risk multiplier of 0 because hours
+spent alone at home are not risky. We use the Pulse question, *How many
+total people (adults and children) currently live in your household,
+including youself?* to set the binary varibale, **lives_with_others**
 
 ```{r}
 pulse$lives_with_others <- ifelse(pulse$num_household > 1,1,0)
 ```
 
+### 3.5.Compute risk model
 
-### 3.5. Relative risk: Split Pulse data
+To recap: we are ultimately interested in understanding risk specific to
+the workplace, so we want to distribute infections between those
+occurring at work, leisure, or at home. If a Pulse respondent had covid
+and we believed they were equally likely to have gotten it in any of the
+settings, we would simply attribute 1/3 of the infection to each.
+Instead, we believe that the likelihood an infection occured in the
+setting is a function of how much time they spend there and how risky
+they are in the setting. We gathered three pieces of information:
 
-To recap: we are ultimately interested in understanding risk specific to the workplace, so we want to distribute infections between those occurring at work, leisure, or at home. If a Pulse respondent had covid and we believed they were equally likely to have gotten it in any of the settings, we would simply attribute 1/3 of the infection to each. Instead, we believe that the likelihood an infection occured in the setting is a function of how much time they spend there and how risky they are in the setting. We gathered three pieces of information:
+1.  Time in each setting by work category (ATUS)
+2.  Risky behavior during leisure hours (YouGov + Pulse)
+3.  People in household (Pulse)
 
-1. Time in each setting by work category (ATUS)
-2. Risky behavior during leisure hours (YouGov + Pulse)
-3. People in household (Pulse)
+We assume that if someone is risky, an hour spent at leisure is 3.125
+times riskier. We also assume that if someone lives alone, there is 0
+risk in their household setting.
 
-We assume that if someone is risky, an hour spent at leisure is 3.125 times riskier. We also assume that if someone lives alone, there is 0 risk in their household setting. 
+#### 3.5.1. Reshape data
 
-To capture risk specific to each setting in our model, we create three subrespondents for every respondent: a “work respondent,” a “leisure respondent,” and a “home respondent”. Each subrespondent is given a weight of one-third. 
+To capture risk specific to each setting in our model, we create three
+subrespondents for every respondent: a "work respondent," a "leisure
+respondent," and a "home respondent". Each subrespondent is given a
+weight of one-third.
 
 We create an infection variable (I) with four categories:
 
-* no infection
-* infection at home
-* infection at work
-* infection at leisure
+-   no infection
+-   infection at home
+-   infection at work
+-   infection at leisure
 
-For a respondent who reports to Pulse that they’ve not been infected, all three subrespondents fall into the “no infection” category in our infection variable (I). For a respondent who reports to Pulse that they have been infected, the work subrespondent will fall into the “infection at work” category, the leisure subrespondent will fall into the “infection at leisure” category, and the home subrespondent will fall into the “infection at home” category. Because we don’t want to distribute an infection equally across each setting, we take the following steps to subdivide the single infection into shares reflecting the likelihood that the infection occurs in each setting:
+For a respondent who reports to Pulse that they've not been infected,
+all three subrespondents fall into the "no infection" category in our
+infection variable (I). For a respondent who reports to Pulse that they
+have been infected, the work subrespondent will fall into the "infection
+at work" category, the leisure subrespondent will fall into the
+"infection at leisure" category, and the home subrespondent will fall
+into the "infection at home" category. Because we don't want to
+distribute an infection equally across each setting, we take the
+following steps to subdivide the single infection into shares reflecting
+the likelihood that the infection occurs in each setting:
 
-1.	Assign number of hours in each setting 
-2.	Assign risk multiplier for each setting
-3.	Calculate the “proportion” of the infection occurring in a given setting by multipliying hours in the setting by the riskiness multiplier and dividing by total, risky-adjusted hours.
-4.	Multiply each proportion by 3 so weighted infections still sum to 1. 
+1.  Assign number of hours in each setting
+2.  Assign risk multiplier for each setting
+3.  Calculate the "proportion" of the infection occurring in a given
+    setting by multipliying hours in the setting by the riskiness
+    multiplier and dividing by total, risky-adjusted hours.
+4.  Multiply each proportion by 3 so weighted infections still sum to 1.
 
-For example, for a Pulse respondent who is risky during leisure and lives alone: 
+For example, for a Pulse respondent who is risky during leisure and
+lives alone:
 
-Respondent | Weight | Time setting | Risky multiplier | No infection | Home covid | Work covid | Leisure covid
------------|--------|--------------|------------------|--------------|------------|------------|--------------
-HomeResp   | 1/3    | 12           | 0                | 0            | 0          | 0          | 0
-LeisureResp| 1/3    | 4            | 3.125            | 0            | 0          | 0          | 1.83
-WorkResp   | 1/3    | 8            | 1                | 0            | 0          | 1.17       | 0
+| Respondent  | Weight | Time setting | Risky multiplier | No infection | Home covid | Work covid | Leisure covid 
+|-------------|--------|--------------|------------------|--------------|------------|------------|---------------
+| HomeResp    | 1/3    | 12           | 0                | 0            | 0          | 0          | 0             
+| LeisureResp | 1/3    | 4            | 3.125            | 0            | 0          | 0          | 1.83          
+| WorkResp    | 1/3    | 8            | 1                | 0            | 0          | 1.17       | 0             
 
-We create a measure of past covid contraction using the following Pulse survey question:
+We create a measure of past covid contraction using the following Pulse
+survey question:
 
-* Has a doctor or other health care provider ever told you that you have COVID-19? 
-  + 1. Yes
-  + 2. No
-  + 3. Not sure
+-   Has a doctor or other health care provider ever told you that you
+    have COVID-19?
+        1.  Yes
+        2.  No
+        3.  Not sure
 
-"Yes" responses are marked as having had Covid-19 and given a 1, while "No" and "Not sure" are both marked as never having had Covid and given a 0.
+"Yes" responses are marked as having had Covid-19 and given a 1, while
+"No" and "Not sure" are both marked as never having had Covid and given
+a 0.
 
 ```{r}
 pulse <- pulse %>%
   filter(had_covid > 0) %>%
   dplyr::mutate(split_weight = 1/3,
          id = row_number())
+```
+
+
+```{r}
 split_pulse <- rbind(pulse %>% mutate(respondent = "HomeResp"),
         pulse %>% mutate(respondent = "LeisureResp"),
         pulse %>% mutate(respondent = "WorkResp"))
@@ -1252,13 +1579,15 @@ split_pulse <- split_pulse %>%
                 no_infection = no_infection/total * 3)
 ```
 
-As a sanity check, we want to make sure we obtain the same number of covid infections and respodents without covid:
+As a sanity check, we want to make sure we obtain the same number of
+covid infections and respodents without covid:
 
 ```{r}
 pulse %>%
   mutate(covid = ifelse(had_covid == 1,"covid","nocovid")) %>%
   dplyr::group_by(covid) %>%
-  dplyr::summarise(count = n())
+  dplyr::summarise(count = n()) %>%
+  kable()
 ```
 
 ```{r}
@@ -1266,7 +1595,8 @@ split_pulse %>%
   mutate(covid = (home_covid + leisure_covid + work_covid)*split_weight,
          nocovid = no_infection * split_weight) %>%
   summarise(covid = sum(covid),
-            nocovid = sum(nocovid))
+            nocovid = sum(nocovid)) %>%
+  kable()
 ```
 
 Now, looking at covid in each of the settings:
@@ -1276,7 +1606,8 @@ split_pulse %>%
   summarise(home = sum(home_covid * split_weight),
             work = sum(work_covid * split_weight),
             leisure = sum(leisure_covid * split_weight)) %>%
-  mutate(total=home+work+leisure)
+  mutate(total=home+work+leisure) %>%
+  kable()
 ```
 
 Exporting Pulse data with split respondents:
@@ -1285,34 +1616,43 @@ Exporting Pulse data with split respondents:
 write.csv(split_pulse,"data_files/pulse/processed/split_pulse.csv")
 ```
 
-
-### Relative risk: Compute relative risk model
+#### 3.5.2. Run risk model
 
 ```{r}
-colnames(split_pulse)
+split_pulse <- read.csv("data_files/pulse/processed/split_pulse.csv")
 ```
+
 ```{r}
 df <- split_pulse %>%
-  select(race_ethnicity)
+  select(race_ethnicity,weight,state,job,split_weight,no_infection,home_covid,work_covid,leisure_covid)
 ```
-
-```{r}
-count(pulse$race_ethnicity)
-```
-
 
 ```{r}
 df <- df %>% 
-  gather(Type,Infected,-Weight,-Job) %>%
-  mutate(Weight = Infected * Weight) %>%
-  select(-Infected) %>%
-  filter(Weight > 0)
+  gather(type,infected,no_infection,home_covid,leisure_covid,work_covid) %>%
+  mutate(split_weight = split_weight * infected) %>%
+  select(-infected) %>%
+  filter(split_weight > 0)
 ```
 
-### Relative to absolute risk: CDC total infections by race and state
-### Relative to absolute risk: Job population estimates by race and state
-### Relative to absolute risk: Total infections at home, leisure, and work
-### Risk-of-infection: IPF to fit relative risk to known totals
-### Risk-of-infection: Translate risk-of-infection to mild/moderate and severe infection
+```{r}
+temp <- df %>% 
+  ungroup() %>% 
+  sample_n(100)
+```
 
+```{r}
+test <- multinom(type ~ job + race_ethnicity + state + (race_ethnicity*state), weights = split_weight, data = temp,MaxNWts = 10000)
+```
 
+## 4. Relative to absolute risk
+### 4.1. CDC total infections by race and state
+
+### 4.2. Job population estimates by race and state
+
+### 4.3. Total infections at home, leisure, and work
+
+## 5. Risk of infection
+### 5.1. IPF to fit relative risk to known totals
+
+### 5.2. Translate risk-of-infection to mild/moderate and severe infection
